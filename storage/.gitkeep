@@ -1,0 +1,3 @@
+Raw government snapshots and processed documents are written here by the
+ingestion pipeline (Phase 6+). Contents are git-ignored because they are large
+and reproducible from the source registry.

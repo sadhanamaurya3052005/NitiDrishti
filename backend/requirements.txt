@@ -1,0 +1,30 @@
+# Minimum bounds so the project installs on current Python (3.11–3.14).
+# After a successful install, freeze the resolved set:
+#   pip freeze > requirements.lock.txt
+
+# ── Phase 0: web framework + database + tooling ──────────────
+fastapi>=0.115
+uvicorn[standard]>=0.34
+pydantic>=2.10
+pydantic-settings>=2.7
+sqlalchemy>=2.0.36
+psycopg[binary]>=3.2
+alembic>=1.14
+structlog>=24.4
+python-dotenv>=1.0
+
+# ── Testing ──────────────────────────────────────────────────
+pytest>=8.3
+httpx>=0.28
+
+# ── Code quality ─────────────────────────────────────────────
+ruff>=0.8
+
+# ── Added in later phases (kept here for reference) ──────────
+# Phase 4  : argon2-cffi, pyjwt, slowapi
+# Phase 6  : requests, beautifulsoup4, lxml, playwright, pandas, openpyxl
+# Phase 7  : python-dateutil, rapidfuzz
+# Phase 8  : apscheduler
+# Phase 11 : weasyprint
+# Phase 13 : pymupdf, pytesseract, pillow
+# Phase 17 : sentence-transformers, onnxruntime, pgvector

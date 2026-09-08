@@ -1,0 +1,166 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --nd-canvas: 250 247 242;
+    --nd-ink: 11 27 58;
+    --nd-primary: 67 56 202;
+    --nd-header-h: 4.5rem;
+  }
+
+  * {
+    @apply border-line;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-canvas text-ink antialiased;
+    font-feature-settings: 'ss01' 1, 'cv11' 1;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    @apply bg-primary/15 text-ink;
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-primary/55 ring-offset-2 ring-offset-canvas;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-semibold tracking-tight text-ink;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  /* Quiet, warm scrollbar that matches the canvas */
+  ::-webkit-scrollbar {
+    width: 11px;
+    height: 11px;
+  }
+  ::-webkit-scrollbar-track {
+    background: theme('colors.canvas.deep');
+  }
+  ::-webkit-scrollbar-thumb {
+    background: theme('colors.line.strong');
+    border: 3px solid theme('colors.canvas.deep');
+    border-radius: 999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: theme('colors.ink.faint');
+  }
+}
+
+@layer components {
+  /* ── Surfaces ──────────────────────────────────────────── */
+  .nd-card {
+    @apply relative rounded-card border border-line bg-surface shadow-soft;
+  }
+
+  .nd-card-interactive {
+    @apply nd-card transition-all duration-300 ease-civic hover:-translate-y-1 hover:border-line-strong hover:shadow-lift;
+  }
+
+  .nd-glass {
+    @apply rounded-card border border-white/60 bg-white/70 shadow-soft backdrop-blur-xl;
+  }
+
+  .nd-panel {
+    @apply rounded-card border border-line bg-surface-muted;
+  }
+
+  /* ── Text helpers ──────────────────────────────────────── */
+  .nd-eyebrow {
+    @apply text-eyebrow font-semibold uppercase text-ink-muted;
+  }
+
+  .nd-lede {
+    @apply text-base leading-relaxed text-ink-soft sm:text-lg;
+  }
+
+  /* ── Chips & pills ─────────────────────────────────────── */
+  .nd-chip {
+    @apply inline-flex items-center gap-1.5 rounded-pill border border-line bg-surface px-2.5 py-1 text-xs font-medium text-ink-soft;
+  }
+
+  .nd-divider {
+    @apply h-px w-full bg-gradient-to-r from-transparent via-line to-transparent;
+  }
+
+  /* ── Loading skeleton (Rule 8: every route has a loading state) ── */
+  .nd-skeleton {
+    @apply relative overflow-hidden rounded-lg bg-canvas-deep;
+  }
+  .nd-skeleton::after {
+    @apply absolute inset-0 animate-shimmer bg-sheen content-[''];
+  }
+
+  /* ── Section rhythm ───────────────────────────────────── */
+  .nd-section {
+    @apply mx-auto w-full max-w-[1200px] px-5 sm:px-8;
+  }
+}
+
+@layer utilities {
+  .nd-grid-bg {
+    background-image: theme('backgroundImage.grid-fine');
+    background-size: theme('backgroundSize.grid-fine');
+  }
+
+  .nd-mask-fade-b {
+    mask-image: linear-gradient(to bottom, black 55%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to bottom, black 55%, transparent 100%);
+  }
+
+  .nd-numeric {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Splash is hidden instantly on repeat visits within the same session,
+   so returning users never see a flash of the boot screen. */
+html.nd-splash-seen #nd-splash {
+  display: none !important;
+}
+
+/* Rule 8: motion is never mandatory. */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+/* Kiosk / office printing: ink-saving monochrome (full stylesheet in Phase 18). */
+@media print {
+  body {
+    background: #fff;
+    color: #000;
+  }
+  .nd-no-print {
+    display: none !important;
+  }
+  .nd-card,
+  .nd-panel {
+    border: 1px solid #999;
+    box-shadow: none;
+  }
+}
