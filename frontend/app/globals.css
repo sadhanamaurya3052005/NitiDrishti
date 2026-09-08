@@ -45,6 +45,27 @@
     text-wrap: pretty;
   }
 
+  /* Devanagari carries matras above and below the baseline, so the tight Latin
+     display scale clips it. Loosen leading and tracking whenever Hindi is on. */
+  html[lang='hi'] h1 {
+    line-height: 1.24;
+    letter-spacing: -0.005em;
+  }
+
+  html[lang='hi'] h2,
+  html[lang='hi'] h3,
+  html[lang='hi'] h4 {
+    line-height: 1.32;
+    letter-spacing: 0;
+  }
+
+  html[lang='hi'] p,
+  html[lang='hi'] li,
+  html[lang='hi'] dd,
+  html[lang='hi'] dt {
+    line-height: 1.7;
+  }
+
   /* Quiet, warm scrollbar that matches the canvas */
   ::-webkit-scrollbar {
     width: 11px;
