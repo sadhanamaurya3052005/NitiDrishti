@@ -1,7 +1,8 @@
 'use client';
 
 import { motion, useScroll, useTransform } from 'framer-motion';
-import { Languages } from 'lucide-react';
+import { ArrowRight, Languages } from 'lucide-react';
+import Link from 'next/link';
 
 import { BrandingLogo } from '@/components/brand/BrandingLogo';
 import { useSplash } from '@/components/brand/SplashProvider';
@@ -68,10 +69,17 @@ export function SiteHeader() {
         </nav>
 
         <div className="flex items-center gap-2">
-          <span className="hidden rounded-pill border border-line bg-surface px-2.5 py-1 text-[11px] font-medium text-ink-muted lg:inline-flex">
+          <span className="hidden rounded-pill border border-line bg-surface px-2.5 py-1 text-[11px] font-medium text-ink-muted xl:inline-flex">
             v{APP.version} · {APP.buildPhase}
           </span>
           <LanguageToggle />
+          <Link
+            href="/citizen"
+            className="group inline-flex items-center gap-1.5 rounded-pill bg-ink px-3.5 py-1.5 text-xs font-semibold text-canvas transition-transform duration-300 ease-civic hover:-translate-y-0.5"
+          >
+            {copy.nav.openApp}
+            <ArrowRight className="h-3.5 w-3.5 transition-transform duration-300 group-hover:translate-x-0.5" />
+          </Link>
         </div>
       </div>
     </motion.header>

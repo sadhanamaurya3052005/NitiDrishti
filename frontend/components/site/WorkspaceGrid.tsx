@@ -1,7 +1,17 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { BarChart3, Check, Landmark, Scale, Store, Users, type LucideIcon } from 'lucide-react';
+import {
+  ArrowUpRight,
+  BarChart3,
+  Check,
+  Landmark,
+  Scale,
+  Store,
+  Users,
+  type LucideIcon,
+} from 'lucide-react';
+import Link from 'next/link';
 
 import { Reveal } from '@/components/motion/Reveal';
 import { useLocale } from '@/components/providers/LocaleProvider';
@@ -9,6 +19,7 @@ import { ACCENTS } from '@/lib/accents';
 import { cn } from '@/lib/cn';
 import type { WorkspaceId } from '@/lib/i18n/landing';
 import { stagger } from '@/lib/motion';
+import { workspaceById } from '@/lib/workspaces';
 import type { Accent } from '@/types';
 
 interface WorkspaceStyle {
@@ -52,16 +63,19 @@ export function WorkspaceGrid() {
             const Icon = style.icon;
 
             return (
-              <motion.article
+              <motion.div
                 key={workspace.id}
                 variants={{ hidden: { opacity: 0, y: 20 }, visible: { opacity: 1, y: 0 } }}
-                className={cn(
-                  'nd-card group flex flex-col p-6 transition-all duration-300 ease-civic hover:-translate-y-1',
-                  accent.hoverBorder,
-                  accent.hoverShadow,
-                  style.span,
-                )}
+                className={style.span}
               >
+                <Link
+                  href={workspaceById(workspace.id).href}
+                  className={cn(
+                    'nd-card group flex h-full flex-col p-6 transition-all duration-300 ease-civic hover:-translate-y-1',
+                    accent.hoverBorder,
+                    accent.hoverShadow,
+                  )}
+                >
                 <div className="flex items-start justify-between gap-3">
                   <span
                     className={cn(
@@ -90,15 +104,22 @@ export function WorkspaceGrid() {
                   ))}
                 </ul>
 
-                <div className="mt-auto pt-6">
+                <div className="mt-auto flex items-center justify-between pt-6">
                   <span
                     className={cn(
                       'block h-[3px] w-10 origin-left rounded-pill opacity-70 transition-transform duration-500 ease-civic group-hover:scale-x-[2.6]',
                       accent.bar,
                     )}
                   />
+                  <ArrowUpRight
+                    className={cn(
+                      'h-4 w-4 opacity-0 transition-all duration-300 group-hover:opacity-100',
+                      accent.text,
+                    )}
+                  />
                 </div>
-              </motion.article>
+                </Link>
+              </motion.div>
             );
           })}
         </motion.div>

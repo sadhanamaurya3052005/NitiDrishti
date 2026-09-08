@@ -69,6 +69,23 @@ Then edit `.env` and set a local `POSTGRES_PASSWORD`.
 
 ### 2. Database
 
+**Option A — managed PostgreSQL (no local install).** Create a free project at
+[neon.com](https://neon.com), copy its connection string, and put it in `.env`:
+
+```
+DATABASE_URL=postgresql://user:password@ep-xxxx.region.aws.neon.tech/nitidrishti
+```
+
+The driver prefix and `sslmode` are added automatically. Then enable the extensions once:
+
+```powershell
+cd backend
+.\.venv\Scripts\Activate.ps1
+python -m scripts.init_extensions
+```
+
+**Option B — Docker.**
+
 ```powershell
 docker compose up -d postgres
 docker compose logs -f postgres     # wait for "database system is ready"
@@ -96,6 +113,22 @@ npm run dev
 
 Open <http://localhost:3000>. The emblem boot sequence plays once per browser
 session and hands the logo over to the header; press **Skip** to bypass it.
+
+Routes available now:
+
+| Route | Contents |
+|---|---|
+| `/` | Public overview: purpose, workspaces, capabilities, data policy, stack |
+| `/citizen` | Citizen & Student workspace |
+| `/csc` | CSC / Kiosk desk |
+| `/nyay-mitra` | Policy intelligence workspace |
+| `/welfare` | Welfare officer desk |
+| `/analytics` | District analytics cockpit |
+
+Inside the application shell: `Ctrl`/`Cmd` + `K` opens the command palette, the speaker
+button reads the page aloud, and the role selector previews how navigation changes per role.
+Workspace pages state what they will contain and show an honest empty state — they are never
+filled with sample data.
 
 ### Everything in Docker (alternative)
 
