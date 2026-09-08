@@ -3,11 +3,15 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 import { DEFAULT_LOCALE, LOCALE_STORAGE_KEY, type Locale } from '@/lib/config';
+import { APP_COPY, type AppCopy } from '@/lib/i18n/app';
 import { LANDING_COPY, type LandingCopy } from '@/lib/i18n/landing';
 
 interface LocaleContextValue {
   locale: Locale;
+  /** Copy for the public entry experience. */
   copy: LandingCopy;
+  /** Copy for the application shell. */
+  app: AppCopy;
   setLocale: (locale: Locale) => void;
   toggleLocale: () => void;
 }
@@ -46,7 +50,13 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const value = useMemo<LocaleContextValue>(
-    () => ({ locale, copy: LANDING_COPY[locale], setLocale, toggleLocale }),
+    () => ({
+      locale,
+      copy: LANDING_COPY[locale],
+      app: APP_COPY[locale],
+      setLocale,
+      toggleLocale,
+    }),
     [locale, setLocale, toggleLocale],
   );
 

@@ -29,6 +29,7 @@ export interface LandingCopy {
     data: string;
     architecture: string;
     languageLabel: string;
+    openApp: string;
   };
   hero: {
     eyebrow: string;
@@ -92,6 +93,7 @@ const en: LandingCopy = {
     data: 'Data policy',
     architecture: 'Architecture',
     languageLabel: 'हिन्दी',
+    openApp: 'Open workspaces',
   },
   hero: {
     eyebrow: 'Welfare & Opportunity Intelligence Platform',
@@ -290,6 +292,7 @@ const hi: LandingCopy = {
     data: 'डेटा नीति',
     architecture: 'आर्किटेक्चर',
     languageLabel: 'English',
+    openApp: 'वर्कस्पेस खोलें',
   },
   hero: {
     eyebrow: 'कल्याण एवं अवसर इंटेलिजेंस प्लेटफ़ॉर्म',

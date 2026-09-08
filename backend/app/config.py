@@ -14,6 +14,34 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 Environment = Literal["development", "testing", "staging", "production"]
 
+MANAGED_HOST_MARKERS = ("neon.tech", "supabase.co", "render.com", "azure.com", "rds.amazonaws.com")
+
+
+def normalise_database_url(url: str) -> str:
+    """Accept a connection string exactly as a provider hands it over.
+
+    Managed providers give plain `postgres://` or `postgresql://` URLs; SQLAlchemy
+    needs the driver spelled out. Hosted databases also require TLS, so
+    `sslmode` is added when the provider left it implicit.
+    """
+    normalised = url.strip()
+
+    for prefix in ("postgresql+psycopg://", "postgresql+psycopg2://"):
+        if normalised.startswith(prefix):
+            break
+    else:
+        for prefix in ("postgresql://", "postgres://"):
+            if normalised.startswith(prefix):
+                normalised = "postgresql+psycopg://" + normalised[len(prefix) :]
+                break
+
+    needs_tls = any(marker in normalised for marker in MANAGED_HOST_MARKERS)
+    if needs_tls and "sslmode=" not in normalised:
+        separator = "&" if "?" in normalised else "?"
+        normalised = f"{normalised}{separator}sslmode=require"
+
+    return normalised
+
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
@@ -48,11 +76,20 @@ class Settings(BaseSettings):
     @property
     def database_url(self) -> str:
         if self.database_url_override:
-            return self.database_url_override
+            return normalise_database_url(self.database_url_override)
         return (
             f"postgresql+psycopg://{self.postgres_user}:{self.postgres_password}"
             f"@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
         )
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def database_host_label(self) -> str:
+        """Host shown in logs and health output — never the credentials."""
+        url = self.database_url
+        if "@" in url:
+            return url.rsplit("@", 1)[1]
+        return f"{self.postgres_host}:{self.postgres_port}"
 
     @computed_field  # type: ignore[prop-decorator]
     @property
