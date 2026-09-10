@@ -1,7 +1,7 @@
 """Central application configuration.
 
 Every value comes from the environment (see .env.example). Nothing is hardcoded
-here so the same image can run in development, testing, staging and production.
+here so the same process can run in development, testing, staging and production.
 """
 
 from __future__ import annotations
