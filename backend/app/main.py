@@ -31,7 +31,10 @@ async def lifespan(_app: FastAPI):
         postgis=db["postgis_enabled"],
     )
     if not db["connected"]:
-        log.warning("database_unreachable", hint="Start PostgreSQL: docker compose up postgres")
+        log.warning(
+            "database_unreachable",
+            hint="Start local PostgreSQL 16 + PostGIS, or set DATABASE_URL in .env",
+        )
     yield
     log.info("shutdown", app=settings.app_name)
 

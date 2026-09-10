@@ -27,13 +27,14 @@ Built ahead of its roadmap position so the workspaces are navigable from day one
 Deferred to the real Phase 5/4: server-enforced authorisation, session-backed role (the
 selector is a preview only), per-workspace layouts once each has real content.
 
-## PHASE 0 — remaining step: database
+## PHASE 0 — remaining step: database (no Docker)
 
-Chosen path: **managed PostgreSQL (Neon)**.
+Chosen path: **native PostgreSQL 16 + PostGIS on this machine**, or a managed
+Postgres URL in `DATABASE_URL` (Neon / equivalent). Docker is not used.
 
 - [x] Backend accepts a provider connection string as-is (driver prefix + `sslmode` handled)
 - [x] `backend/scripts/init_extensions.py` enables postgis, pg_trgm, unaccent, vector
-- [ ] Create the Neon project and paste `DATABASE_URL` into `.env`
+- [ ] Install PostgreSQL 16 + PostGIS locally, create db `nitidrishti_dev` / user `nitidrishti`, **or** paste a managed `DATABASE_URL` into `.env`
 - [ ] Run `python -m scripts.init_extensions`
 - [ ] Confirm `/health` reports `status: ok`
 

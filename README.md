@@ -19,7 +19,7 @@ citizen exactly what they qualify for — with the reason, the source and the ve
 | Phase | **0 — Project Foundation** (complete once the checklist in `TASKS.md` is ticked) |
 | Frontend | Next.js App Router + TypeScript + Tailwind + Framer Motion — design system, cinematic emblem transition, bilingual landing experience |
 | Backend | FastAPI + SQLAlchemy + Alembic — configuration, structured logging, `/health`, `/api/version` |
-| Database | PostgreSQL 16 + PostGIS container, extensions enabled, no tables yet (Phase 2) |
+| Database | PostgreSQL 16 + PostGIS (native / managed). No Docker. Tables start in Phase 2. |
 
 ---
 
@@ -45,7 +45,6 @@ NitiDrishti/
 ├── database/init/     one-time SQL (extensions only)
 ├── storage/           raw + processed government documents (git-ignored)
 ├── docs/              architecture and engineering contracts
-├── docker-compose.yml
 ├── PROJECT_RULES.md   binding engineering rules
 └── TASKS.md           phase checklist
 ```
@@ -56,7 +55,7 @@ NitiDrishti/
 
 ### 0. Prerequisites
 
-Node.js 20+, Python 3.11+, Docker Desktop, Git.
+Node.js 20+, Python 3.11+, PostgreSQL 16 + PostGIS (local install or managed), Git.
 
 ### 1. Environment
 
@@ -69,14 +68,14 @@ Then edit `.env` and set a local `POSTGRES_PASSWORD`.
 
 ### 2. Database
 
-**Option A — managed PostgreSQL (no local install).** Create a free project at
-[neon.com](https://neon.com), copy its connection string, and put it in `.env`:
+**Option A — local PostgreSQL 16 + PostGIS (preferred for geo analytics).**
+Install PostgreSQL 16, enable PostGIS, then create:
 
-```
-DATABASE_URL=postgresql://user:password@ep-xxxx.region.aws.neon.tech/nitidrishti
-```
+- database: `nitidrishti_dev`
+- user: `nitidrishti`
+- host: `localhost:5432`
 
-The driver prefix and `sslmode` are added automatically. Then enable the extensions once:
+Put those values in `.env` (`POSTGRES_*`). Then enable extensions once:
 
 ```powershell
 cd backend
@@ -84,12 +83,15 @@ cd backend
 python -m scripts.init_extensions
 ```
 
-**Option B — Docker.**
+**Option B — managed PostgreSQL.** Create a project (for example Neon), copy its
+connection string, and put it in `.env`:
 
-```powershell
-docker compose up -d postgres
-docker compose logs -f postgres     # wait for "database system is ready"
 ```
+DATABASE_URL=postgresql://user:password@ep-xxxx.region.aws.neon.tech/nitidrishti
+```
+
+The driver prefix and `sslmode` are added automatically. Then run the same
+`python -m scripts.init_extensions` command.
 
 ### 3. Backend
 
@@ -130,14 +132,7 @@ button reads the page aloud, and the role selector previews how navigation chang
 Workspace pages state what they will contain and show an honest empty state — they are never
 filled with sample data.
 
-### Everything in Docker (alternative)
-
-```powershell
-docker compose up --build
-```
-
-On Windows, running the apps natively (steps 3 and 4) is noticeably faster; the
-compose file is the reference environment.
+Run backend and frontend as two native processes (`uvicorn` + `next dev`). Docker is not part of this project.
 
 ---
 
@@ -175,6 +170,6 @@ Phases 0–22 are defined in the implementation roadmap: foundation → architec
 database → backend core → auth/RBAC → frontend shell → source registry → first real
 pipeline → data quality → explore layer → eligibility engine → profile intelligence →
 opportunities → Nyay-Mitra → policy diff → alerts → CSC & analytics → semantic search
-& RAG → PWA/offline → polish → testing & security → deployment → final integration.
+& RAG → PWA/offline → polish → testing & security → native production processes → final integration.
 
 `TASKS.md` tracks the active phase.
