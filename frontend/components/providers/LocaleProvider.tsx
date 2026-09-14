@@ -4,14 +4,20 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 
 import { DEFAULT_LOCALE, LOCALE_STORAGE_KEY, type Locale } from '@/lib/config';
 import { APP_COPY, type AppCopy } from '@/lib/i18n/app';
+import { DESK_COPY, type DeskCopy } from '@/lib/i18n/desks';
+import { HOME_COPY, type HomeCopy } from '@/lib/i18n/home';
 import { LANDING_COPY, type LandingCopy } from '@/lib/i18n/landing';
+import { SHOWCASE_COPY, type ShowcaseCopy } from '@/lib/i18n/showcase';
 
 interface LocaleContextValue {
   locale: Locale;
   /** Copy for the public entry experience. */
   copy: LandingCopy;
+  home: HomeCopy;
+  showcase: ShowcaseCopy;
   /** Copy for the application shell. */
   app: AppCopy;
+  desk: DeskCopy;
   setLocale: (locale: Locale) => void;
   toggleLocale: () => void;
 }
@@ -53,7 +59,10 @@ export function LocaleProvider({ children }: { children: React.ReactNode }) {
     () => ({
       locale,
       copy: LANDING_COPY[locale],
+      home: HOME_COPY[locale],
+      showcase: SHOWCASE_COPY[locale],
       app: APP_COPY[locale],
+      desk: DESK_COPY[locale],
       setLocale,
       toggleLocale,
     }),

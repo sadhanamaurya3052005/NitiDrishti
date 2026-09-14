@@ -1,5 +1,6 @@
 import { API_BASE_URL } from '@/lib/config';
-import type { HealthResponse } from '@/types';
+import { OFFICIAL_SCHEME_CATALOG } from '@/lib/schemes/catalog';
+import type { ApiEnvelope, HealthResponse, SchemeRecord } from '@/types';
 
 export class ApiError extends Error {
   readonly status: number;
@@ -50,4 +51,39 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
 
 export function getHealth(): Promise<HealthResponse> {
   return apiFetch<HealthResponse>('/health', { cache: 'no-store', timeoutMs: 5000 });
+}
+
+export async function getSchemes(params?: {
+  category?: string;
+  q?: string;
+}): Promise<{ schemes: SchemeRecord[]; source: 'api' | 'catalog' }> {
+  const search = new URLSearchParams();
+  if (params?.category && params.category !== 'all') search.set('category', params.category);
+  if (params?.q) search.set('q', params.q);
+  const suffix = search.toString() ? `?${search.toString()}` : '';
+
+  try {
+    const payload = await apiFetch<ApiEnvelope<{ schemes: SchemeRecord[] }> | { schemes: SchemeRecord[] }>(
+      `/api/v1/schemes${suffix}`,
+      { cache: 'no-store', timeoutMs: 6000 },
+    );
+    const schemes =
+      'data' in payload && payload.data?.schemes
+        ? payload.data.schemes
+        : 'schemes' in payload
+          ? payload.schemes
+          : [];
+    if (schemes.length) return { schemes, source: 'api' };
+  } catch {
+    /* Fall through to the local official catalog until Phase 7 ingestion is live. */
+  }
+
+  const query = (params?.q ?? '').trim().toLowerCase();
+  const schemes = OFFICIAL_SCHEME_CATALOG.filter((scheme) => {
+    const categoryOk = !params?.category || params.category === 'all' || scheme.category === params.category;
+    const text = `${scheme.name} ${scheme.nameHi} ${scheme.ministry} ${scheme.summary}`.toLowerCase();
+    const queryOk = !query || text.includes(query);
+    return categoryOk && queryOk;
+  });
+  return { schemes, source: 'catalog' };
 }

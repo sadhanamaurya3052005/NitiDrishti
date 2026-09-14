@@ -1,9 +1,7 @@
-import type { Metadata } from 'next';
+'use client';
 
-import { WorkspaceIntro } from '@/components/app/WorkspaceIntro';
-
-export const metadata: Metadata = { title: 'District Analytics' };
+import { OfficerCockpit } from '@/components/app/OfficerCockpit';
 
 export default function AnalyticsWorkspacePage() {
-  return <WorkspaceIntro id="analytics" />;
+  return <OfficerCockpit />;
 }

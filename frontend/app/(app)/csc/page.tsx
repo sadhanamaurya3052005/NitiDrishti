@@ -1,9 +1,9 @@
 import type { Metadata } from 'next';
 
-import { WorkspaceIntro } from '@/components/app/WorkspaceIntro';
+import { CscIntake } from '@/components/app/CscIntake';
 
 export const metadata: Metadata = { title: 'CSC / Kiosk Desk' };
 
 export default function CscWorkspacePage() {
-  return <WorkspaceIntro id="csc" />;
+  return <CscIntake />;
 }

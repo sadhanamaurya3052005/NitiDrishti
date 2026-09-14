@@ -1,9 +1,7 @@
-import type { Metadata } from 'next';
+'use client';
 
-import { WorkspaceIntro } from '@/components/app/WorkspaceIntro';
+import { OfficerCockpit } from '@/components/app/OfficerCockpit';
 
-export const metadata: Metadata = { title: 'Welfare Officer' };
-
-export default function WelfareWorkspacePage() {
-  return <WorkspaceIntro id="officer" />;
+export default function WelfarePage() {
+  return <OfficerCockpit />;
 }

@@ -22,14 +22,14 @@ function pickVoice(locale: Locale): SpeechSynthesisVoice | null {
   );
 }
 
-export function speak(text: string, locale: Locale, onEnd?: () => void): void {
+export function speak(text: string, locale: Locale, onEnd?: () => void, rate = 1): void {
   if (!speechSupported() || !text.trim()) return;
 
   window.speechSynthesis.cancel();
 
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = VOICE_LANG[locale];
-  utterance.rate = locale === 'hi' ? 0.92 : 1;
+  utterance.rate = (locale === 'hi' ? 0.92 : 1) * rate;
   utterance.pitch = 1;
 
   const voice = pickVoice(locale);

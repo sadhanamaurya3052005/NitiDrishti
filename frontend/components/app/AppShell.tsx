@@ -22,10 +22,15 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const gateway = ['/citizen', '/csc', '/welfare', '/analytics'].includes(pathname);
 
   useEffect(() => {
     setCollapsed(window.localStorage.getItem(COLLAPSE_KEY) === '1');
   }, []);
+
+  useEffect(() => {
+    if (gateway) setCollapsed(true);
+  }, [gateway]);
 
   const toggleCollapse = useCallback(() => {
     setCollapsed((value) => {
@@ -110,7 +115,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -6 }}
             transition={{ duration: 0.3, ease: easings.civic }}
-            className="flex-1 px-4 py-8 sm:px-8"
+            className={cn('flex-1', gateway ? 'px-3 py-4 sm:px-5' : 'px-4 py-8 sm:px-8')}
           >
             {children}
           </motion.main>

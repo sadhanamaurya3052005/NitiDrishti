@@ -10,16 +10,13 @@ import { APP } from '@/lib/config';
 import { easings, stagger, wordReveal } from '@/lib/motion';
 
 interface SplashScreenProps {
-  /** Called once the boot sequence finishes (or is skipped). */
   onDone: () => void;
-  /** Shared-element id handed over to the header emblem. */
   emblemLayoutId: string;
 }
 
-const BOOT_DURATION_MS = 2600;
+const BOOT_DURATION_MS = 3800;
 const BOOT_DURATION_REDUCED_MS = 700;
 
-/** Progress eases out so the last few percent do not feel stuck. */
 function easeOutCubic(t: number): number {
   return 1 - (1 - t) ** 3;
 }
@@ -34,9 +31,6 @@ export function SplashScreen({ onDone, emblemLayoutId }: SplashScreenProps) {
   const finish = useCallback(() => {
     if (finished.current) return;
     finished.current = true;
-    // Both updates are batched into one commit: this emblem unmounts in the same
-    // frame the header emblem mounts, which is what lets Framer morph between
-    // them instead of cross-fading.
     setHandoff(true);
     onDone();
   }, [onDone]);
@@ -55,7 +49,7 @@ export function SplashScreen({ onDone, emblemLayoutId }: SplashScreenProps) {
       if (elapsed < duration) {
         frame = requestAnimationFrame(tick);
       } else {
-        handoffTimer = window.setTimeout(finish, 320);
+        handoffTimer = window.setTimeout(finish, 380);
       }
     };
 
@@ -67,69 +61,78 @@ export function SplashScreen({ onDone, emblemLayoutId }: SplashScreenProps) {
   }, [finish, reduceMotion]);
 
   const activeStep = progress >= 72 ? 2 : progress >= 34 ? 1 : 0;
-  const taglineWords = APP.tagline.split(' ');
 
   return (
     <motion.div
       id="nd-splash"
-      className="fixed inset-0 z-[70] flex items-center justify-center overflow-hidden bg-canvas"
+      className="fixed inset-0 z-[70] flex items-center justify-center overflow-hidden bg-navy-deep"
       initial={{ opacity: 1 }}
-      exit={{ opacity: 0, scale: 1.015, filter: 'blur(6px)' }}
-      transition={{ duration: 0.55, ease: easings.exit }}
+      exit={{ opacity: 0, scale: 1.02, filter: 'blur(8px)' }}
+      transition={{ duration: 0.65, ease: easings.exit }}
       aria-label="NitiDrishti is starting"
       role="status"
     >
-      <div className="pointer-events-none absolute inset-0 bg-aurora" />
-      <div className="pointer-events-none absolute inset-0 nd-grid-bg opacity-[0.5] nd-mask-fade-b" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_20%_20%,rgba(232,119,34,0.28),transparent_42%),radial-gradient(circle_at_80%_10%,rgba(80,140,220,0.2),transparent_40%)]" />
+      <div className="pointer-events-none absolute inset-0 nd-grid-bg opacity-30 nd-mask-fade-b" />
+
+      {!reduceMotion && (
+        <>
+          <span className="pointer-events-none absolute h-[28rem] w-[28rem] rounded-full border border-saffron/20 animate-orbit" />
+          <span className="pointer-events-none absolute h-[36rem] w-[36rem] rounded-full border border-white/10 animate-orbit [animation-duration:36s]" />
+        </>
+      )}
 
       <button
         type="button"
         onClick={finish}
-        className="absolute right-5 top-5 rounded-pill border border-line bg-surface/80 px-3.5 py-1.5 text-xs font-medium text-ink-muted backdrop-blur transition hover:text-ink"
+        className="absolute right-5 top-5 rounded-pill border border-white/20 bg-white/10 px-3.5 py-1.5 text-xs font-medium text-white/80 backdrop-blur transition hover:text-white"
       >
         {copy.splash.skip}
       </button>
 
       <div className="relative flex w-full max-w-lg flex-col items-center px-6 text-center">
-        <div className="relative flex h-40 w-40 items-center justify-center">
+        <div className="relative flex h-48 w-48 items-center justify-center">
           {!reduceMotion && (
-            <span className="absolute h-32 w-32 animate-pulse-ring rounded-full border border-primary/30" />
+            <span className="absolute h-40 w-40 animate-pulse-ring rounded-full border border-saffron/40" />
           )}
-          {!handoff && <BrandingLogo size={132} glow layoutId={emblemLayoutId} />}
+          {!handoff && <BrandingLogo size={148} glow layoutId={emblemLayoutId} />}
         </div>
 
         <motion.div
-          className="mt-7 flex flex-col items-center"
-          variants={stagger(0.35, 0.045)}
+          className="mt-6 flex flex-col items-center"
+          variants={stagger(0.3, 0.04)}
           initial="hidden"
           animate="visible"
         >
-          <div className="flex items-baseline gap-[0.05em] text-[2.35rem] font-semibold tracking-tight text-ink sm:text-[2.75rem]">
+          <div className="flex items-baseline gap-[0.04em] text-[2.5rem] font-semibold tracking-tight text-white sm:text-[3.1rem]">
             {'NitiDrishti'.split('').map((letter, index) => (
               <motion.span key={`${letter}-${index}`} variants={wordReveal}>
                 {letter}
               </motion.span>
             ))}
           </div>
-          <motion.p variants={wordReveal} className="mt-1 font-deva text-lg text-ink-muted">
+          <motion.p variants={wordReveal} className="mt-1 font-deva text-2xl text-saffron">
             {APP.nameDevanagari}
+          </motion.p>
+          <motion.p variants={wordReveal} className="mt-3 text-xs font-semibold uppercase tracking-[0.22em] text-white/60">
+            {APP.subtitle}
           </motion.p>
         </motion.div>
 
         <motion.p
-          className="mt-5 flex flex-wrap justify-center gap-x-1.5 text-sm font-medium text-ink-soft sm:text-base"
-          variants={stagger(0.85, 0.055)}
+          className="mt-6 flex flex-wrap justify-center gap-x-1.5 text-sm font-medium text-white/80"
+          variants={stagger(0.7, 0.05)}
           initial="hidden"
           animate="visible"
         >
-          {taglineWords.map((word, index) => (
+          {APP.tagline.split(' ').map((word, index) => (
             <motion.span key={`${word}-${index}`} variants={wordReveal}>
               {word}
             </motion.span>
           ))}
           <motion.span
             variants={wordReveal}
-            className="ml-0.5 inline-block h-[1.05em] w-[2px] animate-caret bg-primary align-middle"
+            className="ml-0.5 inline-block h-[1.05em] w-[2px] animate-caret bg-saffron align-middle"
           />
         </motion.p>
 
@@ -137,45 +140,35 @@ export function SplashScreen({ onDone, emblemLayoutId }: SplashScreenProps) {
           className="mt-10 w-full"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 1.15, duration: 0.5, ease: easings.civic }}
+          transition={{ delay: 0.9, duration: 0.5, ease: easings.civic }}
         >
-          <div className="flex items-end justify-between">
-            <span className="nd-eyebrow">{copy.splash.boot[activeStep]}</span>
-            <span className="nd-numeric text-sm font-semibold text-primary">{progress}%</span>
+          <div className="flex items-end justify-between text-white/70">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.18em]">{copy.splash.boot[activeStep]}</span>
+            <span className="nd-numeric text-sm font-semibold text-saffron">{progress}%</span>
           </div>
-
-          <div className="mt-2.5 h-[5px] w-full overflow-hidden rounded-pill bg-canvas-deep">
+          <div className="mt-2.5 h-[5px] w-full overflow-hidden rounded-pill bg-white/10">
             <motion.div
-              className="h-full rounded-pill bg-gradient-to-r from-sky via-primary to-violet"
+              className="h-full rounded-pill bg-gradient-to-r from-saffron via-white to-sky"
               animate={{ width: `${progress}%` }}
               transition={{ ease: 'linear', duration: 0.12 }}
             />
           </div>
-
           <ul className="mt-4 space-y-1.5 text-left">
             {copy.splash.boot.map((line, index) => {
               const complete = index < activeStep || progress === 100;
               return (
                 <li
                   key={line}
-                  className={`flex items-center gap-2 text-xs transition-colors duration-300 ${
-                    complete ? 'text-mint-deep' : index === activeStep ? 'text-ink-soft' : 'text-ink-faint'
+                  className={`flex items-center gap-2 text-xs ${
+                    complete ? 'text-mint' : index === activeStep ? 'text-white/80' : 'text-white/35'
                   }`}
                 >
                   <span
                     className={`flex h-4 w-4 items-center justify-center rounded-full border ${
-                      complete
-                        ? 'border-mint bg-mint-soft'
-                        : index === activeStep
-                          ? 'border-primary/50 bg-primary/10'
-                          : 'border-line bg-surface'
+                      complete ? 'border-mint bg-mint/20' : 'border-white/20'
                     }`}
                   >
-                    {complete ? (
-                      <Check className="h-2.5 w-2.5 text-mint-deep" strokeWidth={3} />
-                    ) : (
-                      <span className="h-1 w-1 rounded-full bg-current opacity-60" />
-                    )}
+                    {complete ? <Check className="h-2.5 w-2.5" strokeWidth={3} /> : <span className="h-1 w-1 rounded-full bg-current" />}
                   </span>
                   {line}
                 </li>
@@ -185,12 +178,12 @@ export function SplashScreen({ onDone, emblemLayoutId }: SplashScreenProps) {
         </motion.div>
 
         <motion.div
-          className="mt-9 inline-flex items-center gap-2 rounded-pill border border-line bg-surface/85 px-3.5 py-1.5 text-[11px] font-medium text-ink-muted backdrop-blur"
+          className="mt-9 inline-flex items-center gap-2 rounded-pill border border-white/15 bg-white/10 px-3.5 py-1.5 text-[11px] font-medium text-white/75 backdrop-blur"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ delay: 1.5, duration: 0.5 }}
+          transition={{ delay: 1.2, duration: 0.5 }}
         >
-          <ShieldCheck className="h-3.5 w-3.5 text-mint-deep" />
+          <ShieldCheck className="h-3.5 w-3.5 text-mint" />
           {copy.splash.badge}
         </motion.div>
       </div>

@@ -4,10 +4,138 @@
 
 @layer base {
   :root {
-    --nd-canvas: 250 247 242;
-    --nd-ink: 11 27 58;
-    --nd-primary: 67 56 202;
-    --nd-header-h: 4.5rem;
+    /* Light — warm ivory canvas, navy type, saffron state accent */
+    --nd-canvas: 247 241 232;
+    --nd-canvas-deep: 236 226 208;
+    --nd-canvas-tint: 253 250 244;
+    --nd-surface: 255 252 247;
+    --nd-surface-muted: 248 242 232;
+    --nd-surface-raised: 255 254 251;
+    --nd-ink: 11 31 58;
+    --nd-ink-soft: 42 64 99;
+    --nd-ink-muted: 96 112 142;
+    --nd-ink-faint: 148 158 178;
+    --nd-line: 226 214 196;
+    --nd-line-cool: 214 222 234;
+    --nd-line-strong: 201 186 162;
+    --nd-primary: 18 58 107;
+    --nd-saffron: 196 92 18;
+    --nd-saffron-soft: 255 236 214;
+    --nd-saffron-deep: 154 68 8;
+    --nd-navy: 11 31 58;
+    --nd-navy-deep: 6 18 36;
+    --nd-glass-highlight: 255 255 255;
+    --nd-mint: 14 159 110;
+    --nd-mint-soft: 227 246 238;
+    --nd-mint-deep: 4 108 78;
+    --nd-sky: 12 134 196;
+    --nd-sky-soft: 226 241 251;
+    --nd-sky-deep: 7 89 133;
+    --nd-rose: 210 42 76;
+    --nd-rose-soft: 252 231 236;
+    --nd-rose-deep: 159 18 57;
+    --nd-violet: 109 40 217;
+    --nd-violet-soft: 239 231 253;
+    --nd-violet-deep: 76 29 149;
+    --nd-peach: 233 104 60;
+    --nd-peach-soft: 253 235 227;
+    --nd-peach-deep: 176 58 22;
+    --nd-amber: 194 116 10;
+    --nd-amber-soft: 251 239 217;
+    --nd-amber-deep: 138 82 6;
+    --nd-stage: 8 12 20;
+    --nd-header-h: 3.65rem;
+    --nd-a11y-h: 2.25rem;
+    --nd-aurora: radial-gradient(ellipse 70% 55% at 12% 8%, rgb(196 92 18 / 0.16), transparent 58%),
+      radial-gradient(ellipse 55% 50% at 88% 6%, rgb(18 58 107 / 0.14), transparent 62%),
+      radial-gradient(ellipse 70% 60% at 50% 100%, rgb(14 159 110 / 0.1), transparent 65%);
+    --nd-shadow-soft: 0 1px 2px rgb(11 31 58 / 0.05), 0 10px 28px -14px rgb(11 31 58 / 0.14);
+    --nd-shadow-lift: 0 2px 6px rgb(11 31 58 / 0.06), 0 28px 52px -22px rgb(11 31 58 / 0.28);
+    --nd-shadow-glow: 0 0 0 1px rgb(196 92 18 / 0.18), 0 20px 50px -18px rgb(196 92 18 / 0.35);
+  }
+
+  .dark {
+    /* Dark — deep navy stage, cream type, saffron signal */
+    --nd-canvas: 7 16 28;
+    --nd-canvas-deep: 11 22 38;
+    --nd-canvas-tint: 14 26 44;
+    --nd-surface: 15 28 46;
+    --nd-surface-muted: 12 24 40;
+    --nd-surface-raised: 22 38 60;
+    --nd-ink: 243 237 227;
+    --nd-ink-soft: 214 204 188;
+    --nd-ink-muted: 164 154 138;
+    --nd-ink-faint: 120 112 98;
+    --nd-line: 42 58 82;
+    --nd-line-cool: 48 64 90;
+    --nd-line-strong: 72 92 122;
+    --nd-primary: 232 119 34;
+    --nd-saffron: 255 153 51;
+    --nd-saffron-soft: 64 36 12;
+    --nd-saffron-deep: 255 186 92;
+    --nd-navy: 186 210 240;
+    --nd-navy-deep: 230 238 248;
+    --nd-glass-highlight: 255 255 255;
+    --nd-mint: 52 211 153;
+    --nd-mint-soft: 6 40 32;
+    --nd-mint-deep: 167 243 208;
+    --nd-sky: 56 189 248;
+    --nd-sky-soft: 8 36 56;
+    --nd-sky-deep: 186 230 253;
+    --nd-rose: 251 113 133;
+    --nd-rose-soft: 64 16 28;
+    --nd-rose-deep: 254 205 211;
+    --nd-violet: 196 181 253;
+    --nd-violet-soft: 36 16 64;
+    --nd-violet-deep: 221 214 254;
+    --nd-peach: 251 146 60;
+    --nd-peach-soft: 64 28 12;
+    --nd-peach-deep: 254 215 170;
+    --nd-amber: 251 191 36;
+    --nd-amber-soft: 56 36 8;
+    --nd-amber-deep: 253 230 138;
+    --nd-stage: 5 10 18;
+    --nd-aurora: radial-gradient(ellipse 70% 55% at 14% 8%, rgb(232 119 34 / 0.22), transparent 58%),
+      radial-gradient(ellipse 55% 50% at 88% 4%, rgb(80 140 220 / 0.16), transparent 62%),
+      radial-gradient(ellipse 70% 60% at 50% 100%, rgb(14 159 110 / 0.12), transparent 65%);
+    --nd-shadow-soft: 0 1px 2px rgb(0 0 0 / 0.35), 0 12px 32px -16px rgb(0 0 0 / 0.55);
+    --nd-shadow-lift: 0 8px 28px rgb(0 0 0 / 0.45);
+    --nd-shadow-glow: 0 0 0 1px rgb(255 153 51 / 0.28), 0 22px 50px -16px rgb(232 119 34 / 0.4);
+  }
+
+  [data-contrast='high'] {
+    --nd-canvas: 0 0 0;
+    --nd-canvas-deep: 0 0 0;
+    --nd-canvas-tint: 0 0 0;
+    --nd-surface: 0 0 0;
+    --nd-surface-muted: 0 0 0;
+    --nd-surface-raised: 18 18 0;
+    --nd-ink: 255 230 0;
+    --nd-ink-soft: 255 230 0;
+    --nd-ink-muted: 255 230 0;
+    --nd-ink-faint: 204 184 0;
+    --nd-line: 255 230 0;
+    --nd-line-cool: 255 230 0;
+    --nd-line-strong: 255 230 0;
+    --nd-primary: 255 230 0;
+    --nd-saffron: 255 230 0;
+    --nd-saffron-soft: 40 32 0;
+    --nd-saffron-deep: 255 230 0;
+    --nd-navy: 255 230 0;
+    --nd-aurora: none;
+    --nd-shadow-soft: none;
+    --nd-shadow-lift: none;
+    --nd-shadow-glow: 0 0 0 2px rgb(255 230 0);
+  }
+
+  html[data-font='sm'] {
+    font-size: 14px;
+  }
+  html[data-font='md'] {
+    font-size: 16px;
+  }
+  html[data-font='lg'] {
+    font-size: 18.5px;
   }
 
   * {
@@ -21,16 +149,20 @@
 
   body {
     @apply bg-canvas text-ink antialiased;
+    background-image: var(--nd-aurora);
+    background-attachment: fixed;
     font-feature-settings: 'ss01' 1, 'cv11' 1;
     text-rendering: optimizeLegibility;
   }
 
   ::selection {
-    @apply bg-primary/15 text-ink;
+    background: rgb(var(--nd-saffron) / 0.22);
+    color: rgb(var(--nd-ink));
   }
 
   :focus-visible {
-    @apply outline-none ring-2 ring-primary/55 ring-offset-2 ring-offset-canvas;
+    @apply outline-none ring-2 ring-offset-2 ring-offset-canvas;
+    --tw-ring-color: rgb(var(--nd-saffron) / 0.7);
   }
 
   h1,
@@ -45,8 +177,6 @@
     text-wrap: pretty;
   }
 
-  /* Devanagari carries matras above and below the baseline, so the tight Latin
-     display scale clips it. Loosen leading and tracking whenever Hindi is on. */
   html[lang='hi'] h1 {
     line-height: 1.24;
     letter-spacing: -0.005em;
@@ -66,26 +196,21 @@
     line-height: 1.7;
   }
 
-  /* Quiet, warm scrollbar that matches the canvas */
   ::-webkit-scrollbar {
     width: 11px;
     height: 11px;
   }
   ::-webkit-scrollbar-track {
-    background: theme('colors.canvas.deep');
+    background: rgb(var(--nd-canvas-deep));
   }
   ::-webkit-scrollbar-thumb {
-    background: theme('colors.line.strong');
-    border: 3px solid theme('colors.canvas.deep');
+    background: rgb(var(--nd-line-strong));
+    border: 3px solid rgb(var(--nd-canvas-deep));
     border-radius: 999px;
-  }
-  ::-webkit-scrollbar-thumb:hover {
-    background: theme('colors.ink.faint');
   }
 }
 
 @layer components {
-  /* ── Surfaces ──────────────────────────────────────────── */
   .nd-card {
     @apply relative rounded-card border border-line bg-surface shadow-soft;
   }
@@ -95,14 +220,13 @@
   }
 
   .nd-glass {
-    @apply rounded-card border border-white/60 bg-white/70 shadow-soft backdrop-blur-xl;
+    @apply rounded-card border border-line/70 bg-surface/70 shadow-soft backdrop-blur-xl;
   }
 
   .nd-panel {
     @apply rounded-card border border-line bg-surface-muted;
   }
 
-  /* ── Text helpers ──────────────────────────────────────── */
   .nd-eyebrow {
     @apply text-eyebrow font-semibold uppercase text-ink-muted;
   }
@@ -111,7 +235,6 @@
     @apply text-base leading-relaxed text-ink-soft sm:text-lg;
   }
 
-  /* ── Chips & pills ─────────────────────────────────────── */
   .nd-chip {
     @apply inline-flex items-center gap-1.5 rounded-pill border border-line bg-surface px-2.5 py-1 text-xs font-medium text-ink-soft;
   }
@@ -120,7 +243,6 @@
     @apply h-px w-full bg-gradient-to-r from-transparent via-line to-transparent;
   }
 
-  /* ── Loading skeleton (Rule 8: every route has a loading state) ── */
   .nd-skeleton {
     @apply relative overflow-hidden rounded-lg bg-canvas-deep;
   }
@@ -128,9 +250,16 @@
     @apply absolute inset-0 animate-shimmer bg-sheen content-[''];
   }
 
-  /* ── Section rhythm ───────────────────────────────────── */
   .nd-section {
     @apply mx-auto w-full max-w-[1200px] px-5 sm:px-8;
+  }
+
+  .nd-cta {
+    @apply inline-flex items-center justify-center gap-2 rounded-pill bg-ink px-5 py-3 text-sm font-semibold text-canvas shadow-lift transition-transform duration-300 ease-civic hover:-translate-y-0.5 active:translate-y-0;
+  }
+
+  .nd-cta-saffron {
+    @apply inline-flex items-center justify-center gap-2 rounded-pill bg-saffron px-5 py-3 text-sm font-semibold text-white shadow-glow transition-transform duration-300 ease-civic hover:-translate-y-0.5 dark:text-navy-deep;
   }
 }
 
@@ -148,29 +277,29 @@
   .nd-numeric {
     font-variant-numeric: tabular-nums;
   }
+
+  .nd-marquee:hover .nd-marquee-track {
+    animation-play-state: paused;
+  }
 }
 
-/* Splash is hidden instantly on repeat visits within the same session,
-   so returning users never see a flash of the boot screen. */
 html.nd-splash-seen #nd-splash {
   display: none !important;
 }
 
-/* Rule 8: motion is never mandatory. */
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
   }
-  *,
-  *::before,
-  *::after {
+  *:not([data-motion='keep']):not([data-motion='keep'] *),
+  *:not([data-motion='keep']):not([data-motion='keep'] *)::before,
+  *:not([data-motion='keep']):not([data-motion='keep'] *)::after {
     animation-duration: 0.001ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.001ms !important;
   }
 }
 
-/* Kiosk / office printing: ink-saving monochrome (full stylesheet in Phase 18). */
 @media print {
   body {
     background: #fff;
