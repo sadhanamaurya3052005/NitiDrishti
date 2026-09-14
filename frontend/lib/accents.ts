@@ -62,4 +62,12 @@ export const ACCENTS: Record<Accent, AccentClasses> = {
     hoverBorder: 'hover:border-amber/30',
     hoverShadow: 'hover:shadow-[0_24px_48px_-24px_rgba(194,116,10,0.32)]',
   },
+  saffron: {
+    icon: 'bg-saffron-soft text-saffron-deep ring-1 ring-saffron/20',
+    text: 'text-saffron-deep',
+    chip: 'border-saffron/25 bg-saffron-soft text-saffron-deep',
+    bar: 'bg-saffron',
+    hoverBorder: 'hover:border-saffron/40',
+    hoverShadow: 'hover:shadow-[0_24px_48px_-24px_rgba(196,92,18,0.38)]',
+  },
 };

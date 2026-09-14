@@ -113,7 +113,7 @@ const en: LandingCopy = {
   },
   flow: {
     eyebrow: 'The loop',
-    title: 'Six stages between an official document and a citizen decision',
+    title: 'Collect → Understand → Verify → Match → Alert → Analyse',
     steps: [
       { label: 'Collect', note: 'Official sources, automatically' },
       { label: 'Understand', note: 'AI reads documents & PDFs' },
@@ -266,7 +266,7 @@ const en: LandingCopy = {
       { label: 'Data engineering', items: 'BeautifulSoup · Playwright · PyMuPDF · OCR · Pandas' },
       { label: 'Database', items: 'PostgreSQL · PostGIS · full-text search' },
       { label: 'AI / NLP', items: 'Local models · embeddings · RAG with citations · rule engine' },
-      { label: 'Platform', items: 'Docker · scheduled workers · PWA offline' },
+      { label: 'Platform', items: 'Native processes · scheduled workers · PWA offline' },
     ],
   },
   footer: {
@@ -312,7 +312,7 @@ const hi: LandingCopy = {
   },
   flow: {
     eyebrow: 'पूरा चक्र',
-    title: 'आधिकारिक दस्तावेज़ से नागरिक के निर्णय तक छह चरण',
+    title: 'संग्रह → समझ → सत्यापन → मिलान → चेतावनी → विश्लेषण',
     steps: [
       { label: 'संग्रह', note: 'आधिकारिक स्रोत, स्वतः' },
       { label: 'समझ', note: 'AI दस्तावेज़ और PDF पढ़ता है' },
@@ -465,7 +465,7 @@ const hi: LandingCopy = {
       { label: 'डेटा इंजीनियरिंग', items: 'BeautifulSoup · Playwright · PyMuPDF · OCR · Pandas' },
       { label: 'डेटाबेस', items: 'PostgreSQL · PostGIS · फुल-टेक्स्ट सर्च' },
       { label: 'AI / NLP', items: 'लोकल मॉडल · एम्बेडिंग · प्रमाण-सहित RAG · नियम इंजन' },
-      { label: 'प्लेटफ़ॉर्म', items: 'Docker · शेड्यूल्ड वर्कर · PWA ऑफ़लाइन' },
+      { label: 'प्लेटफ़ॉर्म', items: 'नेटिव प्रोसेस · शेड्यूल्ड वर्कर · PWA ऑफ़लाइन' },
     ],
   },
   footer: {

@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-label="NitiDrishti">
+  <rect width="96" height="96" rx="22" fill="#0A1C38"/>
+  <circle cx="48" cy="48" r="34" fill="none" stroke="#FF9933" stroke-width="3.2" stroke-dasharray="18 54" stroke-linecap="round"/>
+  <circle cx="48" cy="48" r="34" fill="none" stroke="#FFFFFF" stroke-width="3.2" stroke-dasharray="18 54" stroke-dashoffset="24" stroke-linecap="round"/>
+  <circle cx="48" cy="48" r="34" fill="none" stroke="#138808" stroke-width="3.2" stroke-dasharray="18 54" stroke-dashoffset="48" stroke-linecap="round"/>
+  <ellipse cx="48" cy="46" rx="20" ry="11" fill="#F7F1E8"/>
+  <circle cx="48" cy="46" r="7.2" fill="#E07012"/>
+  <circle cx="48" cy="46" r="3" fill="#071428"/>
+</svg>

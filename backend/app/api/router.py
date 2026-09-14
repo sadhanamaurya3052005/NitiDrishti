@@ -8,10 +8,11 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 
-from app.api.routes import health
+from app.api.routes import health, schemes
 
 api_router = APIRouter()
 api_router.include_router(health.router)
+api_router.include_router(schemes.router)
 
 # Registered in later phases:
 #   Phase 4  -> auth, users

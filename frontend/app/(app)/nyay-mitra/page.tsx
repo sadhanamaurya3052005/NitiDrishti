@@ -1,9 +1,9 @@
 import type { Metadata } from 'next';
 
-import { WorkspaceIntro } from '@/components/app/WorkspaceIntro';
+import { NyayMitraDesk } from '@/components/app/NyayMitraDesk';
 
 export const metadata: Metadata = { title: 'Nyay-Mitra' };
 
-export default function NyayMitraWorkspacePage() {
-  return <WorkspaceIntro id="nyaymitra" />;
+export default function NyayMitraPage() {
+  return <NyayMitraDesk />;
 }

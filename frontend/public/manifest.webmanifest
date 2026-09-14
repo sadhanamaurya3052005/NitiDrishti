@@ -1,0 +1,18 @@
+{
+  "name": "NitiDrishti",
+  "short_name": "नीतिदृष्टि",
+  "description": "Citizen Welfare & Opportunity Intelligence Engine",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#07111C",
+  "theme_color": "#C45C12",
+  "lang": "en",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

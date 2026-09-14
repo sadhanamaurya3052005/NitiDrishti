@@ -1,38 +1,44 @@
 import type { Config } from 'tailwindcss';
 
 /**
- * NitiDrishti design tokens.
- *
- * Palette intent (PROJECT_RULES Rule 8): warm ivory canvas, navy typography,
- * indigo/violet as the single primary, and one accent per content category
- * (mint = welfare, peach = opportunity, sky = policy, amber = attention,
- * rose = blocking). No pure-white pages, no dark dashboard, no rainbow cards.
+ * Semantic colours read CSS variables so light, dark and high-contrast
+ * themes stay in one place (globals.css). Accents stay vivid in both modes.
  */
 const config: Config = {
+  darkMode: 'class',
   content: ['./app/**/*.{ts,tsx}', './components/**/*.{ts,tsx}', './lib/**/*.{ts,tsx}'],
   theme: {
     extend: {
       colors: {
         canvas: {
-          DEFAULT: '#FAF7F2',
-          deep: '#F3EEE4',
-          tint: '#FDFCFA',
+          DEFAULT: 'rgb(var(--nd-canvas) / <alpha-value>)',
+          deep: 'rgb(var(--nd-canvas-deep) / <alpha-value>)',
+          tint: 'rgb(var(--nd-canvas-tint) / <alpha-value>)',
         },
         surface: {
-          DEFAULT: '#FFFFFF',
-          muted: '#FBF9F5',
-          raised: '#FFFEFC',
+          DEFAULT: 'rgb(var(--nd-surface) / <alpha-value>)',
+          muted: 'rgb(var(--nd-surface-muted) / <alpha-value>)',
+          raised: 'rgb(var(--nd-surface-raised) / <alpha-value>)',
         },
         ink: {
-          DEFAULT: '#0B1B3A',
-          soft: '#2F4269',
-          muted: '#63739A',
-          faint: '#98A3BC',
+          DEFAULT: 'rgb(var(--nd-ink) / <alpha-value>)',
+          soft: 'rgb(var(--nd-ink-soft) / <alpha-value>)',
+          muted: 'rgb(var(--nd-ink-muted) / <alpha-value>)',
+          faint: 'rgb(var(--nd-ink-faint) / <alpha-value>)',
         },
         line: {
-          DEFAULT: '#E7E1D5',
-          cool: '#DFE4EF',
-          strong: '#CFC7B6',
+          DEFAULT: 'rgb(var(--nd-line) / <alpha-value>)',
+          cool: 'rgb(var(--nd-line-cool) / <alpha-value>)',
+          strong: 'rgb(var(--nd-line-strong) / <alpha-value>)',
+        },
+        saffron: {
+          soft: 'rgb(var(--nd-saffron-soft) / <alpha-value>)',
+          DEFAULT: 'rgb(var(--nd-saffron) / <alpha-value>)',
+          deep: 'rgb(var(--nd-saffron-deep) / <alpha-value>)',
+        },
+        navy: {
+          DEFAULT: 'rgb(var(--nd-navy) / <alpha-value>)',
+          deep: 'rgb(var(--nd-navy-deep) / <alpha-value>)',
         },
         primary: {
           50: '#EEF0FF',
@@ -45,37 +51,37 @@ const config: Config = {
           700: '#372FA8',
           800: '#2E2A85',
           900: '#231F63',
-          DEFAULT: '#4338CA',
-        },
-        violet: {
-          soft: '#EFE7FD',
-          DEFAULT: '#6D28D9',
-          deep: '#4C1D95',
+          DEFAULT: 'rgb(var(--nd-primary) / <alpha-value>)',
         },
         mint: {
-          soft: '#E3F6EE',
-          DEFAULT: '#0E9F6E',
-          deep: '#046C4E',
+          soft: 'rgb(var(--nd-mint-soft) / <alpha-value>)',
+          DEFAULT: 'rgb(var(--nd-mint) / <alpha-value>)',
+          deep: 'rgb(var(--nd-mint-deep) / <alpha-value>)',
         },
         peach: {
-          soft: '#FDEBE3',
-          DEFAULT: '#E9683C',
-          deep: '#B03A16',
+          soft: 'rgb(var(--nd-peach-soft) / <alpha-value>)',
+          DEFAULT: 'rgb(var(--nd-peach) / <alpha-value>)',
+          deep: 'rgb(var(--nd-peach-deep) / <alpha-value>)',
         },
         sky: {
-          soft: '#E2F1FB',
-          DEFAULT: '#0C86C4',
-          deep: '#075985',
+          soft: 'rgb(var(--nd-sky-soft) / <alpha-value>)',
+          DEFAULT: 'rgb(var(--nd-sky) / <alpha-value>)',
+          deep: 'rgb(var(--nd-sky-deep) / <alpha-value>)',
         },
         amber: {
-          soft: '#FBEFD9',
-          DEFAULT: '#C2740A',
-          deep: '#8A5206',
+          soft: 'rgb(var(--nd-amber-soft) / <alpha-value>)',
+          DEFAULT: 'rgb(var(--nd-amber) / <alpha-value>)',
+          deep: 'rgb(var(--nd-amber-deep) / <alpha-value>)',
         },
         rose: {
-          soft: '#FCE7EC',
-          DEFAULT: '#D22A4C',
-          deep: '#9F1239',
+          soft: 'rgb(var(--nd-rose-soft) / <alpha-value>)',
+          DEFAULT: 'rgb(var(--nd-rose) / <alpha-value>)',
+          deep: 'rgb(var(--nd-rose-deep) / <alpha-value>)',
+        },
+        violet: {
+          soft: 'rgb(var(--nd-violet-soft) / <alpha-value>)',
+          DEFAULT: 'rgb(var(--nd-violet) / <alpha-value>)',
+          deep: 'rgb(var(--nd-violet-deep) / <alpha-value>)',
         },
       },
       fontFamily: {
@@ -93,17 +99,16 @@ const config: Config = {
         pill: '999px',
       },
       boxShadow: {
-        soft: '0 1px 2px rgba(11, 27, 58, 0.04), 0 8px 24px -12px rgba(11, 27, 58, 0.10)',
-        lift: '0 2px 4px rgba(11, 27, 58, 0.05), 0 24px 48px -20px rgba(11, 27, 58, 0.20)',
-        inset: 'inset 0 1px 0 rgba(255, 255, 255, 0.7)',
-        glow: '0 0 0 1px rgba(67, 56, 202, 0.14), 0 18px 50px -20px rgba(67, 56, 202, 0.35)',
+        soft: 'var(--nd-shadow-soft)',
+        lift: 'var(--nd-shadow-lift)',
+        inset: 'inset 0 1px 0 rgb(var(--nd-glass-highlight) / 0.7)',
+        glow: 'var(--nd-shadow-glow)',
       },
       backgroundImage: {
         'grid-fine':
-          'linear-gradient(to right, rgba(11,27,58,0.045) 1px, transparent 1px), linear-gradient(to bottom, rgba(11,27,58,0.045) 1px, transparent 1px)',
-        'aurora':
-          'radial-gradient(ellipse 70% 55% at 18% 12%, rgba(109,40,217,0.13), transparent 60%), radial-gradient(ellipse 60% 50% at 82% 8%, rgba(12,134,196,0.12), transparent 62%), radial-gradient(ellipse 70% 60% at 50% 100%, rgba(14,159,110,0.10), transparent 65%)',
-        'sheen': 'linear-gradient(110deg, transparent 20%, rgba(255,255,255,0.65) 50%, transparent 80%)',
+          'linear-gradient(to right, rgb(var(--nd-ink) / 0.045) 1px, transparent 1px), linear-gradient(to bottom, rgb(var(--nd-ink) / 0.045) 1px, transparent 1px)',
+        aurora: 'var(--nd-aurora)',
+        sheen: 'linear-gradient(110deg, transparent 20%, rgb(var(--nd-glass-highlight) / 0.55) 50%, transparent 80%)',
       },
       backgroundSize: {
         'grid-fine': '44px 44px',
@@ -118,6 +123,10 @@ const config: Config = {
           '70%': { transform: 'scale(1.35)', opacity: '0' },
           '100%': { transform: 'scale(1.35)', opacity: '0' },
         },
+        'eq-bar': {
+          '0%, 100%': { height: '6px' },
+          '50%': { height: '18px' },
+        },
         float: {
           '0%, 100%': { transform: 'translateY(0)' },
           '50%': { transform: 'translateY(-6px)' },
@@ -127,12 +136,28 @@ const config: Config = {
           '50%, 95%': { opacity: '0' },
           '100%': { opacity: '1' },
         },
+        'hero-ken': {
+          '0%': { transform: 'scale(1.04) translate3d(0, 0, 0)' },
+          '100%': { transform: 'scale(1.12) translate3d(-1.5%, 1%, 0)' },
+        },
+        orbit: {
+          '0%': { transform: 'rotate(0deg)' },
+          '100%': { transform: 'rotate(360deg)' },
+        },
+        marquee: {
+          '0%': { transform: 'translateX(0)' },
+          '100%': { transform: 'translateX(-50%)' },
+        },
       },
       animation: {
         shimmer: 'shimmer 1.9s ease-in-out infinite',
         'pulse-ring': 'pulse-ring 2.6s cubic-bezier(0.24, 0.4, 0.36, 1) infinite',
         float: 'float 6s ease-in-out infinite',
         caret: 'caret 1.1s steps(1) infinite',
+        'hero-ken': 'hero-ken 18s ease-in-out alternate infinite',
+        orbit: 'orbit 22s linear infinite',
+        marquee: 'marquee 36s linear infinite',
+        'eq-bar': 'eq-bar 0.7s ease-in-out infinite',
       },
       transitionTimingFunction: {
         civic: 'cubic-bezier(0.22, 1, 0.36, 1)',

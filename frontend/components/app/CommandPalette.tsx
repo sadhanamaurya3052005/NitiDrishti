@@ -8,7 +8,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLocale } from '@/components/providers/LocaleProvider';
 import { ACCENTS } from '@/lib/accents';
 import { cn } from '@/lib/cn';
-import type { ToolId } from '@/lib/i18n/app';
+import { TOOL_ORDER, TOOL_ROUTES } from '@/lib/tools';
 import { easings } from '@/lib/motion';
 import { WORKSPACE_ROUTES } from '@/lib/workspaces';
 
@@ -23,15 +23,6 @@ interface Entry {
   hint: string;
   href: string | null;
 }
-
-const TOOL_ORDER: readonly ToolId[] = [
-  'explore',
-  'eligibility',
-  'whatif',
-  'compare',
-  'alerts',
-  'assistant',
-];
 
 /** Keyboard-first navigation between workspaces (Ctrl/Cmd + K). */
 export function CommandPalette({ open, onClose }: CommandPaletteProps) {
@@ -53,7 +44,7 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
       key: toolId,
       label: app.tools[toolId].name,
       hint: app.tools[toolId].phase,
-      href: null,
+      href: TOOL_ROUTES[toolId],
     }));
 
     return [...workspaces, ...tools];

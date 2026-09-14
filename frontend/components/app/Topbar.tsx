@@ -1,15 +1,17 @@
 'use client';
 
 import { AnimatePresence, motion } from 'framer-motion';
-import { Check, ChevronDown, Languages, Menu, Search, Volume2, VolumeX, Wifi, WifiOff } from 'lucide-react';
+import { Check, ChevronDown, Languages, Menu, Moon, Search, Sun, Volume2, VolumeX, Wifi, WifiOff } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
 import { useRole } from '@/components/app/RoleProvider';
 import { useLocale } from '@/components/providers/LocaleProvider';
+import { useTheme } from '@/components/providers/ThemeProvider';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
 import { cn } from '@/lib/cn';
 import { readableTextFromMain, speak, speechSupported, stopSpeaking } from '@/lib/speech';
+import { TOOL_ROUTES } from '@/lib/tools';
 import { ROLE_LABELS, ROLE_ORDER, WORKSPACE_ROUTES } from '@/lib/workspaces';
 
 interface TopbarProps {
@@ -18,12 +20,20 @@ interface TopbarProps {
 }
 
 export function Topbar({ onOpenPalette, onOpenMobileNav }: TopbarProps) {
-  const { app, locale, toggleLocale } = useLocale();
+  const { app, desk, locale, toggleLocale } = useLocale();
+  const { theme, toggleTheme } = useTheme();
   const pathname = usePathname();
   const online = useOnlineStatus();
 
   const current = WORKSPACE_ROUTES.find((workspace) => workspace.href === pathname);
-  const title = current ? app.workspaces[current.id].name : null;
+  const toolTitle = (Object.entries(TOOL_ROUTES) as [string, string][]).find(([, href]) => href === pathname);
+  const title = current
+    ? app.workspaces[current.id].name
+    : toolTitle
+      ? app.tools[toolTitle[0] as keyof typeof app.tools].name
+      : pathname === '/opportunities'
+        ? desk.opportunities.title
+        : null;
 
   return (
     <header className="nd-no-print sticky top-0 z-30 flex h-[var(--nd-header-h)] items-center gap-3 border-b border-line bg-canvas/85 px-4 backdrop-blur-xl sm:px-6">
@@ -77,8 +87,17 @@ export function Topbar({ onOpenPalette, onOpenMobileNav }: TopbarProps) {
           aria-label={locale === 'en' ? 'हिन्दी में बदलें' : 'Switch to English'}
           className="inline-flex items-center gap-1.5 rounded-pill border border-line bg-surface px-2.5 py-1.5 text-xs font-semibold text-ink-soft transition hover:border-line-strong hover:text-ink active:scale-[0.97]"
         >
-          <Languages className="h-3.5 w-3.5 text-primary" />
+          <Languages className="h-3.5 w-3.5 text-saffron" />
           {locale === 'en' ? 'हिन्दी' : 'EN'}
+        </button>
+
+        <button
+          type="button"
+          onClick={toggleTheme}
+          aria-label={theme === 'light' ? 'Dark mode' : 'Light mode'}
+          className="inline-flex h-9 w-9 items-center justify-center rounded-pill border border-line bg-surface"
+        >
+          {theme === 'light' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4 text-saffron" />}
         </button>
 
         <RoleSwitcher />

@@ -12,17 +12,8 @@ import { useLocale } from '@/components/providers/LocaleProvider';
 import { ACCENTS } from '@/lib/accents';
 import { cn } from '@/lib/cn';
 import { APP } from '@/lib/config';
-import type { ToolId } from '@/lib/i18n/app';
+import { TOOL_ORDER, TOOL_ROUTES } from '@/lib/tools';
 import { WORKSPACE_ROUTES, canAccess } from '@/lib/workspaces';
-
-const TOOL_ORDER: readonly ToolId[] = [
-  'explore',
-  'eligibility',
-  'whatif',
-  'compare',
-  'alerts',
-  'assistant',
-];
 
 interface SidebarProps {
   collapsed: boolean;
@@ -118,15 +109,21 @@ export function Sidebar({ collapsed, onToggleCollapse, onNavigate }: SidebarProp
             <ul className="space-y-1">
               {TOOL_ORDER.map((toolId) => {
                 const tool = app.tools[toolId];
+                const href = TOOL_ROUTES[toolId];
+                const active = pathname === href;
                 return (
                   <li key={toolId}>
-                    <span
-                      className="flex cursor-not-allowed items-center gap-2 rounded-xl px-2.5 py-2 text-sm text-ink-faint"
-                      title={`${tool.name} — ${tool.phase}`}
+                    <Link
+                      href={href}
+                      onClick={onNavigate}
+                      aria-current={active ? 'page' : undefined}
+                      className={cn(
+                        'flex items-center gap-2 rounded-xl px-2.5 py-2 text-sm transition-colors',
+                        active ? 'bg-surface font-medium text-ink shadow-soft' : 'text-ink-soft hover:bg-canvas-deep hover:text-ink',
+                      )}
                     >
-                      <Lock className="h-3.5 w-3.5 shrink-0" aria-hidden />
                       <span className="truncate">{tool.name}</span>
-                    </span>
+                    </Link>
                   </li>
                 );
               })}
