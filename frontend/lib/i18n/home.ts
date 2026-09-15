@@ -1,3 +1,4 @@
+import { CIVIC_SECTORS } from '@/lib/civic/sectors';
 import type { Locale } from '@/lib/config';
 import type { SchemeCategory } from '@/types';
 
@@ -49,6 +50,7 @@ export interface HomeCopy {
     save: string;
     saved: string;
     empty: string;
+    emptyCatalog: string;
     live: string;
     catalog: string;
     filters: readonly { id: 'all' | SchemeCategory; label: string }[];
@@ -113,13 +115,19 @@ export interface HomeCopy {
   };
   footer: {
     product: string;
+    resources: string;
     legal: string;
     contact: string;
-    grievance: string;
+    purpose: string;
+    help: string;
+    faqs: string;
+    privacy: string;
+    terms: string;
+    emailLabel: string;
+    email: string;
+    projectLabel: string;
+    languageNote: string;
     attributions: string;
-    diagnostics: string;
-    latency: string;
-    env: string;
     links: readonly { label: string; href: string }[];
   };
   auth: {
@@ -128,9 +136,15 @@ export interface HomeCopy {
     guestHint: string;
     citizen: string;
     csc: string;
+    officer: string;
     name: string;
+    email: string;
+    password: string;
     continue: string;
     note: string;
+    officerHint: string;
+    missingCredentials: string;
+    failed: string;
   };
   pwa: {
     install: string;
@@ -201,7 +215,7 @@ const en: HomeCopy = {
     steps: [
       {
         title: 'The agenda: right scheme, right citizen, right rule',
-        body: 'NitiDrishti + SIH260092 is a civic engine. It collects official welfare, scholarships and enterprise credit, then tells each person — farmer, SHG woman, student, artisan — what they qualify for, and why.',
+        body: 'NitiDrishti is a civic engine. It collects official welfare, scholarships and enterprise credit, then tells each person — farmer, SHG woman, student, artisan — what they qualify for, and why.',
       },
       {
         title: 'Data we collect ourselves — not rent',
@@ -239,15 +253,12 @@ const en: HomeCopy = {
     save: 'Save to dossier',
     saved: 'Saved',
     empty: 'No schemes match these filters. Broaden income or category.',
+    emptyCatalog: 'No data from official sources yet. Check back after the next refresh.',
     live: 'Live from API',
-    catalog: 'Official catalog (API warming up)',
+    catalog: 'Official catalog',
     filters: [
       { id: 'all', label: 'All schemes' },
-      { id: 'agriculture', label: 'Agriculture & allied' },
-      { id: 'women', label: 'Women & child' },
-      { id: 'education', label: 'Education & skilling' },
-      { id: 'health', label: 'Health & senior citizens' },
-      { id: 'msme', label: 'MSME & livelihood' },
+      ...CIVIC_SECTORS.map((sector) => ({ id: sector.category, label: sector.nameEn })),
     ],
   },
   inspector: {
@@ -380,7 +391,7 @@ const en: HomeCopy = {
       },
       {
         q: 'Is my Aadhaar or income uploaded to cloud servers?',
-        a: 'Guest mode writes zero server rows. Document OCR runs in browser memory. We never store raw national ID digits. A consented citizen profile is kept only after an explicit DPDP toggle (Phase 4).',
+        a: 'Guest mode writes zero server rows. Document OCR runs in browser memory. We never store raw national ID digits. A consented citizen profile is kept only after an explicit DPDP toggle.',
       },
       {
         q: 'How do CSC Village Level Entrepreneurs process bulk applications?',
@@ -388,15 +399,15 @@ const en: HomeCopy = {
       },
       {
         q: 'How do I download an application-ready PDF dossier?',
-        a: 'Save schemes, then trigger “Save to dossier”. The Action Dossier (Phase 11) is a monochrome A4 with scheme facts, checklist, gazette hash and helpline. Until that worker is live, the queue holds the request on this device.',
+        a: 'Save schemes, then trigger “Save to dossier”. The Action Dossier is a monochrome A4 with scheme facts, checklist, gazette hash and helpline. Until that worker is live, the queue holds the request on this device.',
       },
       {
         q: 'Where does scheme data come from?',
         a: 'Our connectors read official government sites and documents. Third-party or paid data APIs are not used. Every card is meant to carry source URL and last-verified time once ingestion is on.',
       },
       {
-        q: 'What is SIH260092 doing inside this product?',
-        a: 'The citizen cockpit is anchored on marginalized entrepreneurship — weavers, potters, street vendors, SHGs and students — with welfare, scholarships and enterprise credit on the same rule engine.',
+        q: 'Who is NitiDrishti built for?',
+        a: 'The citizen desk is anchored on people the delivery chain often misses — weavers, potters, street vendors, SHGs and students — with welfare, scholarships and enterprise credit on the same rule engine.',
       },
       {
         q: 'Does voice work in Hindi?',
@@ -414,18 +425,25 @@ const en: HomeCopy = {
   },
   footer: {
     product: 'Product',
-    legal: 'Stewardship',
+    resources: 'Resources',
+    legal: 'Legal',
     contact: 'Contact',
-    grievance: 'Grievance: institute project desk · Session 2026–27',
+    purpose:
+      'Welfare and opportunity intelligence from official government sources — schemes, rules, and eligibility you can verify. No invented counts.',
+    help: 'Help',
+    faqs: 'FAQs',
+    privacy: 'Privacy',
+    terms: 'Terms',
+    emailLabel: 'Support',
+    email: 'hello@nitidrishti.local',
+    projectLabel: 'Platform',
+    languageNote: 'English and हिन्दी',
     attributions: 'Scheme names and benefit ceilings are public official facts. Always re-verify on the source gazette before applying.',
-    diagnostics: 'System probe',
-    latency: 'API probe',
-    env: 'Environment',
     links: [
-      { label: 'Citizen cockpit', href: '/citizen' },
-      { label: 'CSC desk', href: '/csc' },
+      { label: 'Citizen', href: '/citizen' },
+      { label: 'CSC', href: '/csc' },
+      { label: 'Welfare', href: '/welfare' },
       { label: 'Nyay-Mitra', href: '/nyay-mitra' },
-      { label: 'Welfare command', href: '/welfare' },
       { label: 'Analytics', href: '/analytics' },
     ],
   },
@@ -435,9 +453,15 @@ const en: HomeCopy = {
     guestHint: 'Zero server footprint. 0-PII session on this browser only.',
     citizen: 'Citizen',
     csc: 'CSC operator',
+    officer: 'Welfare officer',
     name: 'Display name (optional, not an ID)',
+    email: 'Email',
+    password: 'Password',
     continue: 'Continue',
-    note: 'JWT + DPDP purge ship in Phase 4. Until then this session stays on the device.',
+    note: 'JWT session on this device. Guest still writes zero server rows.',
+    officerHint: 'CSC and officer access is assigned on the server. New accounts are CITIZEN.',
+    missingCredentials: 'Email and password are required to sign in. Guest needs neither.',
+    failed: 'Could not sign in. Check email and password, or register first.',
   },
   pwa: {
     install: 'Install app',
@@ -508,7 +532,7 @@ const hi: HomeCopy = {
     steps: [
       {
         title: 'एजेंडा: सही योजना, सही नागरिक, सही नियम',
-        body: 'NitiDrishti + SIH260092 एक नागरिक इंजन है। यह आधिकारिक कल्याण, छात्रवृत्ति और उद्यम ऋण इकट्ठा करता है, फिर किसान, एसएचजी महिला, विद्यार्थी, कारीगर को बताता है वे किसके पात्र हैं — और क्यों।',
+        body: 'NitiDrishti एक नागरिक इंजन है। यह आधिकारिक कल्याण, छात्रवृत्ति और उद्यम ऋण इकट्ठा करता है, फिर किसान, एसएचजी महिला, विद्यार्थी, कारीगर को बताता है वे किसके पात्र हैं — और क्यों।',
       },
       {
         title: 'डेटा हम स्वयं एकत्र करते हैं — किराए पर नहीं',
@@ -546,15 +570,12 @@ const hi: HomeCopy = {
     save: 'डोज़ियर में सहेजें',
     saved: 'सहेजा गया',
     empty: 'इन फ़िल्टर से कोई योजना नहीं मिली।',
+    emptyCatalog: 'आधिकारिक स्रोतों से अभी कोई डेटा नहीं। अगले रिफ़्रेश के बाद फिर देखें।',
     live: 'API से लाइव',
-    catalog: 'आधिकारिक कैटलॉग (API तैयार हो रही है)',
+    catalog: 'आधिकारिक कैटलॉग',
     filters: [
       { id: 'all', label: 'सभी योजनाएँ' },
-      { id: 'agriculture', label: 'कृषि एवं allied' },
-      { id: 'women', label: 'महिला एवं बाल' },
-      { id: 'education', label: 'शिक्षा एवं कौशल' },
-      { id: 'health', label: 'स्वास्थ्य एवं वरिष्ठ' },
-      { id: 'msme', label: 'एमएसएमई एवं आजीविका' },
+      ...CIVIC_SECTORS.map((sector) => ({ id: sector.category, label: sector.nameHi })),
     ],
   },
   inspector: {
@@ -683,7 +704,7 @@ const hi: HomeCopy = {
       { q: 'CSC उद्यमी बल्क आवेदन कैसे लें?', a: 'हेडर को केंद्र / CSC एजेंट पर लाएँ। बल्क अपलोड और डोज़ियर कतार दिखती है। पाँच-चरणीय डेस्क दो मिनट से कम में।' },
       { q: 'आवेदन-तैयार PDF डोज़ियर कैसे डाउनलोड करूँ?', a: 'योजना सहेजें, फिर डोज़ियर में भेजें। एक्शन डोज़ियर मोनोक्रोम A4 है। वर्कर आने तक कतार इस डिवाइस पर रहती है।' },
       { q: 'योजना डेटा कहाँ से आता है?', a: 'कनेक्टर आधिकारिक सरकारी साइट और दस्तावेज़ पढ़ते हैं। तीसरे पक्ष की पेड डेटा API नहीं।' },
-      { q: 'SIH260092 इस उत्पाद में क्या है?', a: 'नागरिक कॉकपिट हाशिये के उद्यमियों — बुनकर, कुम्हार, स्ट्रीट वेंडर, एसएचजी, विद्यार्थी — पर टिका है।' },
+      { q: 'NitiDrishti किसके लिए है?', a: 'नागरिक डेस्क हाशिये के उद्यमियों — बुनकर, कुम्हार, स्ट्रीट वेंडर, एसएचजी, विद्यार्थी — पर टिका है।' },
       { q: 'क्या वॉयस हिंदी में चलता है?', a: 'माइक ब्राउज़र Speech API पर hi-IN इस्तेमाल करता है। पहचान न हो तो ईमानदार फ़ॉलबैक दिखता है।' },
       { q: 'एनालिटिक्स नक्शा कौन देखे?', a: 'कल्याण और विश्लेषक भूमिकाएँ। ज़िला पॉलीगॉन PostGIS से आते हैं, डमी पिन से नहीं।' },
       { q: 'अपना डेटा कैसे मिटाऊँ?', a: 'साइन आउट डिवाइस सत्र साफ़ करता है। Right to Forget: DELETE /api/v1/profile/purge — सहमति वाली पंक्तियाँ हार्ड-डिलीट।' },
@@ -691,18 +712,25 @@ const hi: HomeCopy = {
   },
   footer: {
     product: 'उत्पाद',
-    legal: 'जिम्मेदारी',
+    resources: 'संसाधन',
+    legal: 'कानूनी',
     contact: 'संपर्क',
-    grievance: 'शिकायत: संस्थान परियोजना डेस्क · सत्र 2026–27',
+    purpose:
+      'आधिकारिक सरकारी स्रोतों से कल्याण और अवसर की जानकारी — योजनाएँ, नियम, और पात्रता जिन्हें जाँचा जा सके। काल्पनिक आँकड़े नहीं।',
+    help: 'सहायता',
+    faqs: 'प्रश्न',
+    privacy: 'गोपनीयता',
+    terms: 'नियम',
+    emailLabel: 'सहायता',
+    email: 'hello@nitidrishti.local',
+    projectLabel: 'प्लेटफ़ॉर्म',
+    languageNote: 'अंग्रेज़ी और हिन्दी',
     attributions: 'योजना नाम और लाभ सार्वजनिक आधिकारिक तथ्य हैं। आवेदन से पहले राजपत्र पर पुनः जाँचें।',
-    diagnostics: 'सिस्टम जाँच',
-    latency: 'API जाँच',
-    env: 'पर्यावरण',
     links: [
-      { label: 'नागरिक कॉकपिट', href: '/citizen' },
-      { label: 'CSC डेस्क', href: '/csc' },
+      { label: 'नागरिक', href: '/citizen' },
+      { label: 'CSC', href: '/csc' },
+      { label: 'कल्याण', href: '/welfare' },
       { label: 'न्याय-मित्र', href: '/nyay-mitra' },
-      { label: 'कल्याण कमांड', href: '/welfare' },
       { label: 'एनालिटिक्स', href: '/analytics' },
     ],
   },
@@ -712,9 +740,15 @@ const hi: HomeCopy = {
     guestHint: 'सर्वर पर शून्य छाप। केवल इस ब्राउज़र पर 0-PII सत्र।',
     citizen: 'नागरिक',
     csc: 'CSC संचालक',
+    officer: 'कल्याण अधिकारी',
     name: 'प्रदर्शित नाम (वैकल्पिक, पहचान नहीं)',
+    email: 'ईमेल',
+    password: 'पासवर्ड',
     continue: 'आगे बढ़ें',
-    note: 'JWT और DPDP purge फेज़ 4 में। तब तक सत्र डिवाइस पर रहता है।',
+    note: 'JWT सत्र इसी डिवाइस पर। अतिथि अब भी सर्वर पर शून्य पंक्ति लिखता है।',
+    officerHint: 'CSC और अधिकारी भूमिका सर्वर पर सौंपी जाती है। नए खाते CITIZEN हैं।',
+    missingCredentials: 'साइन इन के लिए ईमेल और पासवर्ड चाहिए। अतिथि को दोनों की आवश्यकता नहीं।',
+    failed: 'साइन इन नहीं हो सका। ईमेल और पासवर्ड जाँचें, या पहले रजिस्टर करें।',
   },
   pwa: {
     install: 'ऐप स्थापित करें',

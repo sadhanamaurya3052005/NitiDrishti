@@ -9,7 +9,7 @@ from __future__ import annotations
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field, computed_field
+from pydantic import AliasChoices, Field, computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 Environment = Literal["development", "testing", "staging", "production"]
@@ -49,6 +49,7 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         case_sensitive=False,
         extra="ignore",
+        populate_by_name=True,
     )
 
     # ── Application ──────────────────────────────────────────
@@ -62,7 +63,7 @@ class Settings(BaseSettings):
     # ── Server ───────────────────────────────────────────────
     backend_host: str = "0.0.0.0"
     backend_port: int = 8000
-    cors_origins: str = "http://localhost:3000"
+    cors_origins: str = "http://localhost:3000,http://localhost:3001,http://127.0.0.1:3001"
 
     # ── Database ─────────────────────────────────────────────
     postgres_user: str = "nitidrishti"
@@ -71,6 +72,41 @@ class Settings(BaseSettings):
     postgres_host: str = "localhost"
     postgres_port: int = 5432
     database_url_override: str | None = Field(default=None, alias="DATABASE_URL")
+
+    # ── JWT ──────────────────────────────────────────────────
+    jwt_secret_key: str = "generate_a_long_random_string_32b"
+    jwt_algorithm: str = "HS256"
+    access_token_expire_minutes: int = 30
+    refresh_token_expire_days: int = 7
+
+    # ── Ingestion ────────────────────────────────────────────
+    ingestion_allowed_domains: str = (
+        "myscheme.gov.in,vikaspedia.in,en.vikaspedia.in,dbtbharat.gov.in,"
+        "scholarships.gov.in,ugc.gov.in,aicte-india.org,india.gov.in"
+    )
+    ingestion_user_agent: str = "NitiDrishtiBot/0.1"
+    ingestion_request_timeout: int = 30
+    ingestion_max_retries: int = 3
+    ingestion_max_file_mb: int = 25
+    ingestion_crawl_delay_seconds: float = 1.0
+    ingest_scheduler_enabled: bool = Field(
+        default=True,
+        validation_alias=AliasChoices(
+            "INGEST_SCHEDULER_ENABLED",
+            "INGEST_SCHEDULE_ENABLED",
+            "ingest_scheduler_enabled",
+        ),
+    )
+    ingest_interval_hours: int = 24
+    raw_storage_path: str = "./storage/raw"
+
+    # Operator seed — placeholders in .env.example only. Register stays CITIZEN.
+    bootstrap_officer_email: str = ""
+    bootstrap_officer_password: str = ""
+    bootstrap_admin_email: str = ""
+    bootstrap_admin_password: str = ""
+    bootstrap_csc_email: str = ""
+    bootstrap_csc_password: str = ""
 
     @computed_field  # type: ignore[prop-decorator]
     @property
@@ -100,6 +136,23 @@ class Settings(BaseSettings):
     @property
     def is_production(self) -> bool:
         return self.app_env == "production"
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def jwt_secret_is_placeholder(self) -> bool:
+        secret = self.jwt_secret_key.strip().lower()
+        return secret in {
+            "",
+            "generate_a_long_random_string",
+            "generate_a_long_random_string_32b",
+            "change_me",
+            "changeme",
+        }
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def ingestion_allowed_domain_list(self) -> list[str]:
+        return [item.strip().lower() for item in self.ingestion_allowed_domains.split(",") if item.strip()]
 
 
 @lru_cache

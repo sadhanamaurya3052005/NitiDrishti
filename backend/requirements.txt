@@ -2,7 +2,7 @@
 # After a successful install, freeze the resolved set:
 #   pip freeze > requirements.lock.txt
 
-# ── Phase 0: web framework + database + tooling ──────────────
+# ── Web framework + database + tooling ───────────────────────
 fastapi>=0.115
 uvicorn[standard]>=0.34
 pydantic>=2.10
@@ -20,11 +20,22 @@ httpx>=0.28
 # ── Code quality ─────────────────────────────────────────────
 ruff>=0.8
 
-# ── Added in later phases (kept here for reference) ──────────
-# Phase 4  : argon2-cffi, pyjwt, slowapi
-# Phase 6  : requests, beautifulsoup4, lxml, playwright, pandas, openpyxl
-# Phase 7  : python-dateutil, rapidfuzz
-# Phase 8  : apscheduler
-# Phase 11 : weasyprint
-# Phase 13 : pymupdf, pytesseract, pillow
-# Phase 17 : sentence-transformers, onnxruntime, pgvector
+# ── Auth ─────────────────────────────────────────────────────
+argon2-cffi>=23.1
+PyJWT>=2.10
+
+# ── Official-source connectors ───────────────────────────────
+requests>=2.32
+beautifulsoup4>=4.12
+lxml>=5.3
+pypdf>=5.1
+openpyxl>=3.1
+
+# ── Optional (not required to boot) ──────────────────────────
+# slowapi (rate limit)
+# playwright (JS-rendered pages only)
+# python-dateutil, rapidfuzz
+apscheduler>=3.10
+# weasyprint (dossier PDF)
+# pymupdf, pytesseract, pillow (scanned OCR)
+# sentence-transformers, onnxruntime, pgvector (semantic search)

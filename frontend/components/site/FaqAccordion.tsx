@@ -9,7 +9,7 @@ import { cn } from '@/lib/cn';
 
 export function FaqAccordion() {
   const { home, locale } = useLocale();
-  const [open, setOpen] = useState<number | null>(0);
+  const [open, setOpen] = useState<number | null>(null);
   const [expanded, setExpanded] = useState(false);
   const items = expanded ? home.faq.items : home.faq.items.slice(0, 5);
 

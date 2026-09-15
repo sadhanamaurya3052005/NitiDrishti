@@ -11,11 +11,9 @@ import { stagger } from '@/lib/motion';
 import { workspaceById } from '@/lib/workspaces';
 
 /**
- * What a workspace shows before its phase is built.
- *
- * Deliberately not a mock dashboard: no invented counts, no placeholder charts.
- * It states the purpose, lists the modules that will appear, and shows an
- * honest empty state (PROJECT_RULES Rule 2).
+ * Workspace overview: purpose, modules, and an honest empty state.
+ * Never a mock dashboard — no invented counts or placeholder charts
+ * (PROJECT_RULES Rule 2).
  */
 export function WorkspaceIntro({ id }: { id: WorkspaceId }) {
   const { app } = useLocale();
@@ -48,7 +46,7 @@ export function WorkspaceIntro({ id }: { id: WorkspaceId }) {
 
         <span className={cn('nd-chip', accent.chip)}>
           <Hammer className="h-3.5 w-3.5" />
-          {app.intro.statusLabel}: {workspace.phase}
+          {app.intro.statusLabel}: {workspace.status}
         </span>
       </motion.header>
 
@@ -96,7 +94,7 @@ export function WorkspaceIntro({ id }: { id: WorkspaceId }) {
 
           <span className="mt-6 inline-flex items-center gap-1.5 text-[11px] font-medium text-ink-faint">
             <CircleDashed className="h-3.5 w-3.5 animate-spin [animation-duration:3s]" />
-            {workspace.phase}
+            {workspace.status}
           </span>
         </div>
       </section>

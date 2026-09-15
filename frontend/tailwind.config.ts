@@ -137,8 +137,8 @@ const config: Config = {
           '100%': { opacity: '1' },
         },
         'hero-ken': {
-          '0%': { transform: 'scale(1.04) translate3d(0, 0, 0)' },
-          '100%': { transform: 'scale(1.12) translate3d(-1.5%, 1%, 0)' },
+          '0%': { transform: 'scale(1) translate3d(0, 0, 0)' },
+          '100%': { transform: 'scale(1.06) translate3d(-1.2%, 0, 0)' },
         },
         orbit: {
           '0%': { transform: 'rotate(0deg)' },

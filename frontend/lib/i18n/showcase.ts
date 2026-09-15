@@ -56,7 +56,7 @@ const en: ShowcaseCopy = {
   hero: {
     walkthroughEyebrow: 'Walkthrough platform',
     walkthroughTitle: 'Watch the platform film',
-    walkthroughHint: 'Add your project video in the walkthrough modal when ready.',
+    walkthroughHint: 'The platform film plays in this dialog when a recording is attached.',
   },
   gateways: {
     eyebrow: 'Choose a desk',
@@ -171,7 +171,7 @@ const hi: ShowcaseCopy = {
   hero: {
     walkthroughEyebrow: 'वॉकथ्रू प्लेटफ़ॉर्म',
     walkthroughTitle: 'प्लेटफ़ॉर्म फ़िल्म देखें',
-    walkthroughHint: 'जब तैयार हो, वॉकथ्रू में अपनी परियोजना वीडियो जोड़ें।',
+    walkthroughHint: 'रिकॉर्डिंग जुड़ने पर प्लेटफ़ॉर्म फ़िल्म इसी संवाद में चलेगी।',
   },
   gateways: {
     eyebrow: 'डेस्क चुनें',

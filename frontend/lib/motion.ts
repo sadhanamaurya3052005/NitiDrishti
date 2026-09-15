@@ -1,8 +1,8 @@
 import type { Transition, Variants } from 'framer-motion';
 
 /**
- * One shared motion vocabulary for the whole product, so every screen built in
- * later phases feels like the same application.
+ * One shared motion vocabulary for the whole product, so every screen
+ * feels like the same application.
  */
 
 export const springs = {

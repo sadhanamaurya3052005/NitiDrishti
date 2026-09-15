@@ -22,7 +22,7 @@ export default function AssistantPage() {
           <h1 className="mt-1 text-headline">{desk.assistantPage.title}</h1>
           <p className="mt-2 text-sm text-ink-soft">{desk.assistantPage.lede}</p>
         </div>
-        <MetricBadge label="Phase 17" />
+        <MetricBadge label="Assistant" />
       </header>
       <Button variant="saffron" className="mt-8" onClick={() => openAssistantDock()}>
         {desk.assistantPage.open}

@@ -51,9 +51,9 @@ export function HeroCarousel() {
       <AnimatePresence mode="sync">
         <motion.div
           key={SLIDES[index]?.src ?? index}
-          className="absolute inset-0"
-          initial={{ opacity: 0, scale: 1.04 }}
-          animate={{ opacity: 1, scale: 1 }}
+          className="absolute inset-0 overflow-hidden"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.6, ease: easings.civic }}
         >
@@ -61,7 +61,7 @@ export function HeroCarousel() {
           <img
             src={SLIDES[index]?.src}
             alt={SLIDES[index]?.alt ?? ''}
-            className="h-full w-full object-cover animate-hero-ken"
+            className="absolute inset-x-0 top-0 h-[118%] w-full max-w-none origin-top object-cover object-top animate-hero-ken"
           />
           {light ? (
             <>

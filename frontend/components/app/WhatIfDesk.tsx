@@ -1,19 +1,20 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { MetricBadge } from '@/components/ui/MetricBadge';
 import { useExperience } from '@/components/providers/ExperienceProvider';
 import { useLocale } from '@/components/providers/LocaleProvider';
-import { OFFICIAL_SCHEME_CATALOG } from '@/lib/schemes/catalog';
+import { useSchemes } from '@/hooks/useSchemes';
 import { evaluateScheme } from '@/lib/schemes/evaluate';
 import { unlockHints } from '@/lib/schemes/sensitivity';
 
 export function WhatIfDesk() {
-  const { desk, locale } = useLocale();
+  const { desk, locale, home } = useLocale();
   const { profile, patchProfile } = useExperience();
-  const [schemeId, setSchemeId] = useState(OFFICIAL_SCHEME_CATALOG[0]?.id ?? '');
-  const scheme = OFFICIAL_SCHEME_CATALOG.find((item) => item.id === schemeId);
+  const { schemes, loading, error } = useSchemes();
+  const [schemeId, setSchemeId] = useState('');
+  const scheme = schemes.find((item) => item.id === schemeId) ?? schemes[0];
   const evaluation = useMemo(
     () => (scheme ? evaluateScheme(scheme, profile) : null),
     [profile, scheme],
@@ -23,6 +24,10 @@ export function WhatIfDesk() {
     [profile, scheme],
   );
 
+  useEffect(() => {
+    if (!schemeId && schemes[0]) setSchemeId(schemes[0].id);
+  }, [schemeId, schemes]);
+
   return (
     <div className="mx-auto w-full max-w-3xl">
       <header className="flex items-start justify-between gap-4">
@@ -31,23 +36,34 @@ export function WhatIfDesk() {
           <h1 className="mt-1 text-headline">{desk.whatif.title}</h1>
           <p className="mt-2 text-sm text-ink-soft">{desk.whatif.lede}</p>
         </div>
-        <MetricBadge label="Phase 11" />
+        <MetricBadge label="Sensitivity" />
       </header>
 
-      <label className="mt-8 block text-xs font-semibold text-ink-muted">
-        {desk.whatif.pick}
-        <select
-          value={schemeId}
-          onChange={(event) => setSchemeId(event.target.value)}
-          className="mt-1.5 w-full rounded-xl border border-line bg-surface px-3 py-2 text-sm"
-        >
-          {OFFICIAL_SCHEME_CATALOG.map((item) => (
-            <option key={item.id} value={item.id}>
-              {locale === 'hi' ? item.nameHi : item.name}
-            </option>
-          ))}
-        </select>
-      </label>
+      {error ? (
+        <p className="nd-card mt-8 px-5 py-10 text-center text-sm text-ink-muted">
+          {locale === 'hi' ? 'सूची अभी उपलब्ध नहीं।' : 'Catalog is unavailable right now.'}
+        </p>
+      ) : null}
+      {!loading && !error && schemes.length === 0 ? (
+        <p className="nd-card mt-8 px-5 py-10 text-center text-sm text-ink-muted">{home.schemes.emptyCatalog}</p>
+      ) : null}
+
+      {schemes.length ? (
+        <label className="mt-8 block text-xs font-semibold text-ink-muted">
+          {desk.whatif.pick}
+          <select
+            value={scheme?.id ?? ''}
+            onChange={(event) => setSchemeId(event.target.value)}
+            className="mt-1.5 w-full rounded-xl border border-line bg-surface px-3 py-2 text-sm"
+          >
+            {schemes.map((item) => (
+              <option key={item.id} value={item.id}>
+                {locale === 'hi' ? item.nameHi : item.name}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
 
       <label className="mt-4 block text-xs font-semibold text-ink-muted">
         Income

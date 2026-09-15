@@ -1,26 +1,30 @@
 'use client';
 
+import Link from 'next/link';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useExperience } from '@/components/providers/ExperienceProvider';
 import { useLocale } from '@/components/providers/LocaleProvider';
 import { usePwa } from '@/components/providers/PwaProvider';
+import { useSchemes } from '@/hooks/useSchemes';
 import { enqueueKioskApplicant, listKioskQueue, type KioskQueuedApplicant } from '@/lib/offline/kioskQueue';
+import { getCscSummary } from '@/lib/blockE';
 import { lastFourDigits, maskIdentity } from '@/lib/privacy/mask';
-import { OFFICIAL_SCHEME_CATALOG } from '@/lib/schemes/catalog';
 import { evaluateScheme } from '@/lib/schemes/evaluate';
 import type { CasteCategory } from '@/types';
 
 export function CscIntake() {
-  const { locale, app } = useLocale();
-  const { profile, patchProfile, enqueueDossier } = useExperience();
+  const { locale, app, home } = useLocale();
+  const { profile, patchProfile, enqueueDossier, session } = useExperience();
   const { online } = usePwa();
+  const { schemes } = useSchemes();
   const [name, setName] = useState('');
   const [idRaw, setIdRaw] = useState('');
-  const [picked, setPicked] = useState<string[]>(OFFICIAL_SCHEME_CATALOG.slice(0, 1).map((item) => item.id));
+  const [picked, setPicked] = useState<string[]>([]);
   const [printMode, setPrintMode] = useState<'thermal' | 'a4'>('thermal');
   const [queue, setQueue] = useState<KioskQueuedApplicant[]>([]);
   const [consent, setConsent] = useState(false);
+  const [publishedSchemes, setPublishedSchemes] = useState<number | null>(null);
 
   const refreshQueue = useCallback(async () => {
     try {
@@ -34,13 +38,23 @@ export function CscIntake() {
     void refreshQueue();
   }, [refreshQueue]);
 
+  useEffect(() => {
+    void getCscSummary()
+      .then((data) => setPublishedSchemes(data.published_schemes))
+      .catch(() => setPublishedSchemes(null));
+  }, []);
+
+  useEffect(() => {
+    if (picked.length === 0 && schemes[0]) setPicked([schemes[0].id]);
+  }, [picked.length, schemes]);
+
   const evaluations = useMemo(
     () =>
-      OFFICIAL_SCHEME_CATALOG.map((scheme) => ({
+      schemes.map((scheme) => ({
         scheme,
         evaluation: evaluateScheme(scheme, profile),
       })),
-    [profile],
+    [profile, schemes],
   );
 
   const selected = evaluations.filter((item) => picked.includes(item.scheme.id));
@@ -86,11 +100,18 @@ export function CscIntake() {
   return (
     <div className="mx-auto w-full max-w-[1400px]">
       <header className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-line bg-navy px-4 py-3 text-canvas dark:bg-canvas-deep dark:text-ink">
+        <Link href="/#gateways" className="text-sm font-semibold text-saffron">
+          ← {locale === 'hi' ? 'होम' : 'Home'}
+        </Link>
         <p className="text-sm font-semibold">{app.workspaces.csc.name}</p>
         <p className="text-xs">
+          {session?.displayName ?? (locale === 'hi' ? 'अतिथि' : 'Guest')}
+          {' · '}
           {online ? (locale === 'hi' ? 'ऑनलाइन' : 'Online') : locale === 'hi' ? 'ज़ीरो-बैंडविड्थ PWA' : 'Zero-bandwidth PWA'}
           {' · '}
           {locale === 'hi' ? 'स्थानीय कतार' : 'Local queue'}: {queue.length}
+          {' · '}
+          {locale === 'hi' ? 'प्रकाशित योजनाएँ' : 'published schemes'}: {publishedSchemes ?? '—'}
         </p>
         <p className="text-[11px] text-canvas/70 dark:text-ink-muted">Tab · Alt+N · F9 80mm · F10 A4 · F12 sync</p>
       </header>
@@ -165,6 +186,9 @@ export function CscIntake() {
         <section className="nd-card p-4">
           <h2 className="text-sm font-semibold">{locale === 'hi' ? 'नियतात्मक मैट्रिक्स' : 'Deterministic matrix'}</h2>
           <ul className="mt-3 max-h-[520px] space-y-2 overflow-y-auto">
+            {evaluations.length === 0 ? (
+              <li className="px-3 py-8 text-center text-sm text-ink-muted">{home.schemes.emptyCatalog}</li>
+            ) : null}
             {evaluations.map(({ scheme, evaluation }) => (
               <li key={scheme.id}>
                 <label className="flex cursor-pointer items-start gap-2 rounded-xl border border-line px-3 py-2">

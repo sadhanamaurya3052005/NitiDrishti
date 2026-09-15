@@ -36,14 +36,14 @@ export function CommandPalette({ open, onClose }: CommandPaletteProps) {
     const workspaces: Entry[] = WORKSPACE_ROUTES.map((workspace) => ({
       key: workspace.id,
       label: app.workspaces[workspace.id].name,
-      hint: workspace.phase,
+      hint: workspace.status,
       href: workspace.href,
     }));
 
     const tools: Entry[] = TOOL_ORDER.map((toolId) => ({
       key: toolId,
       label: app.tools[toolId].name,
-      hint: app.tools[toolId].phase,
+      hint: app.tools[toolId].status,
       href: TOOL_ROUTES[toolId],
     }));
 

@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from 'react';
 import { MitraMark } from '@/components/brand/MitraMark';
 import { useLocale } from '@/components/providers/LocaleProvider';
 import { answerAssistant } from '@/lib/assistant/engine';
+import { askAssistant } from '@/lib/blockE';
 import { cn } from '@/lib/cn';
 import { OPEN_ASSISTANT_EVENT, WALKTHROUGH_EVENT } from '@/lib/tools';
 import { speak, speechSupported, stopSpeaking } from '@/lib/speech';
@@ -78,22 +79,35 @@ export function AssistantDock() {
   const pushReply = (query: string) => {
     const trimmed = query.trim();
     if (!trimmed) return;
-    const reply = answerAssistant(trimmed, locale);
     const user: ChatMessage = {
       id: `u-${Date.now()}`,
       role: 'user',
       text: trimmed,
       citations: [],
     };
-    const bot: ChatMessage = {
-      id: `a-${Date.now()}`,
-      role: 'assistant',
-      text: reply.text,
-      citations: reply.citations,
-    };
-    setMessages((current) => [...current, user, bot]);
+    setMessages((current) => [...current, user]);
     setInput('');
-    if (voiceOut) speak(reply.text, locale);
+    void (async () => {
+      let text: string;
+      let citations: string[];
+      try {
+        const remote = await askAssistant(trimmed);
+        text = remote.text;
+        citations = remote.citations.map((item) => item.source_url);
+      } catch {
+        const reply = answerAssistant(trimmed, locale);
+        text = reply.text;
+        citations = reply.citations;
+      }
+      const bot: ChatMessage = {
+        id: `a-${Date.now()}`,
+        role: 'assistant',
+        text,
+        citations,
+      };
+      setMessages((current) => [...current, bot]);
+      if (voiceOut) speak(text, locale);
+    })();
   };
 
   const startVoice = () => {
@@ -129,7 +143,11 @@ export function AssistantDock() {
     setListening(true);
   };
 
-  const greeting = locale === 'hi' ? 'नीतिदृष्टि मित्र — केवल कैटलॉग से उत्तर' : 'NitiDrishti Mitra — catalog-grounded only';
+  const heading = locale === 'hi' ? 'नीति दृष्टि सहायक' : 'NitiDrishti Assistant';
+  const subtitle =
+    locale === 'hi'
+      ? 'आधिकारिक संग्रहित पाठ खोजता है। पात्रता तय नहीं करता।'
+      : 'Searches official ingested text. Does not decide eligibility.';
   const prompts =
     locale === 'hi'
       ? ['पीएम किसान', 'पात्रता कैसे तय होती है?', 'आधार सुरक्षित है?']
@@ -147,7 +165,7 @@ export function AssistantDock() {
                 exit={{ opacity: 0, y: 16, scale: 0.96, filter: 'blur(6px)' }}
                 transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
                 className="pointer-events-auto flex h-[min(74dvh,560px)] w-[min(calc(100vw-2rem),400px)] flex-col overflow-hidden rounded-[1.75rem] border border-line bg-surface/95 shadow-lift backdrop-blur-xl"
-                aria-label={greeting}
+                aria-label={`${heading}. ${subtitle}`}
               >
                 <header className="relative overflow-hidden border-b border-white/10 bg-gradient-to-br from-[#0b1f3a] via-[#163a6b] to-[#c45c12] px-3 py-3 text-white dark:from-[#07111c] dark:via-[#1b3a63] dark:to-[#e07a14]">
                   <span className="pointer-events-none absolute -right-6 -top-10 h-28 w-28 rounded-full bg-white/10 blur-2xl" />
@@ -158,11 +176,8 @@ export function AssistantDock() {
                         <MitraMark size={40} />
                       </span>
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold">NitiDrishti Mitra</p>
-                        <p className="flex items-center gap-1.5 truncate text-[10px] text-white/75">
-                          <span className="h-1.5 w-1.5 rounded-full bg-emerald-300 shadow-[0_0_8px_#6ee7b7]" />
-                          {greeting}
-                        </p>
+                        <p className="truncate text-sm font-semibold tracking-tight">{heading}</p>
+                        <p className="mt-0.5 line-clamp-2 text-[10px] leading-snug text-white/80">{subtitle}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-1">
@@ -317,7 +332,7 @@ export function AssistantDock() {
             onClick={() => setOpen((value) => !value)}
             className="pointer-events-auto group relative flex h-16 w-16 items-center justify-center rounded-full bg-gradient-to-br from-saffron via-[#e07a14] to-[#163a6b] text-white shadow-glow"
             aria-expanded={open}
-            aria-label="NitiDrishti Mitra"
+            aria-label={heading}
           >
             <span className="absolute inset-[-6px] animate-orbit rounded-full border border-dashed border-saffron/50" />
             <span className="absolute inset-0 animate-pulse-ring rounded-full border border-saffron" />

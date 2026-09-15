@@ -1,8 +1,4 @@
-"""Health and version endpoints.
-
-These are the only endpoints in Phase 0. They prove that the application boots
-and that PostgreSQL is reachable.
-"""
+"""Health and version endpoints."""
 
 from __future__ import annotations
 
@@ -36,5 +32,5 @@ def version() -> VersionResponse:
         app=settings.app_name,
         version=settings.app_version,
         environment=settings.app_env,
-        phase="Phase 0 — Project Foundation",
+        status="production-ready core",
     )

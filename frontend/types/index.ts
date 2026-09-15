@@ -1,4 +1,4 @@
-/** Shared frontend types. Domain models arrive with their phases. */
+/** Shared frontend types. */
 
 export interface DatabaseStatus {
   connected: boolean;
@@ -21,10 +21,23 @@ export type Accent = 'primary' | 'violet' | 'mint' | 'peach' | 'sky' | 'amber' |
 
 export type SchemeCategory =
   | 'agriculture'
-  | 'women'
+  | 'welfare'
   | 'education'
+  | 'msme'
+  | 'women'
+  | 'skills'
+  | 'banking'
   | 'health'
-  | 'msme';
+  | 'housing'
+  | 'sports'
+  | 'science'
+  | 'transport'
+  | 'tourism'
+  | 'jal'
+  | 'legal'
+  | 'artisans'
+  | 'disaster'
+  | 'gig';
 
 export type CasteCategory = 'GEN' | 'OBC' | 'SC' | 'ST' | 'EWS';
 
@@ -73,7 +86,7 @@ export interface ApiEnvelope<T> {
   request_id: string;
 }
 
-/** The six roles defined in the architecture (wired in Phase 4). */
+/** The six roles defined in the architecture. */
 export type Role =
   | 'CITIZEN'
   | 'STUDENT'
