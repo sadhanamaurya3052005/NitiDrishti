@@ -11,17 +11,22 @@
   },
   "dependencies": {
     "clsx": "^2.1.1",
+    "d3-geo": "^3.1.1",
     "framer-motion": "^11.18.0",
     "lucide-react": "^0.471.0",
     "next": "^15.1.6",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "tailwind-merge": "^2.6.0"
+    "react-simple-maps": "^5.0.5",
+    "tailwind-merge": "^2.6.0",
+    "topojson-client": "^3.1.0"
   },
   "devDependencies": {
+    "@types/d3-geo": "^3.1.1",
     "@types/node": "^22.10.5",
     "@types/react": "^19.0.7",
     "@types/react-dom": "^19.0.3",
+    "@types/topojson-client": "^3.1.5",
     "autoprefixer": "^10.4.20",
     "eslint": "^8.57.1",
     "eslint-config-next": "^15.1.6",

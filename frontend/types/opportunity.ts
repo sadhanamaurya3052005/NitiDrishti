@@ -1,6 +1,6 @@
 /**
  * Docs3 opportunity entities (jobs, internships, scholarships).
- * Rows arrive only from official ingestion (Phase 12). No seed listings.
+ * Rows arrive only from official ingestion. No seed listings.
  */
 export type OpportunityKind = 'scholarship' | 'job' | 'internship';
 

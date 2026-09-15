@@ -7,7 +7,7 @@ export interface UnlockHint {
   message: string;
 }
 
-/** Counterfactual shortest change for a failed AST rule (Docs3 Phase 11 / Docs2 What-If). */
+/** Counterfactual shortest change for a failed AST rule (What-If desk). */
 export function unlockHints(scheme: SchemeRecord, profile: CitizenProfile): UnlockHint[] {
   const evaluation = evaluateScheme(scheme, profile);
   const hints: UnlockHint[] = [];

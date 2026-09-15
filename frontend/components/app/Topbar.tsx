@@ -1,11 +1,13 @@
 'use client';
 
 import { AnimatePresence, motion } from 'framer-motion';
-import { Check, ChevronDown, Languages, Menu, Moon, Search, Sun, Volume2, VolumeX, Wifi, WifiOff } from 'lucide-react';
-import { usePathname } from 'next/navigation';
+import { Check, ChevronDown, Languages, LogIn, LogOut, Menu, Moon, Search, Sun, Volume2, VolumeX, Wifi, WifiOff } from 'lucide-react';
+import Link from 'next/link';
+import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 
 import { useRole } from '@/components/app/RoleProvider';
+import { useExperience } from '@/components/providers/ExperienceProvider';
 import { useLocale } from '@/components/providers/LocaleProvider';
 import { useTheme } from '@/components/providers/ThemeProvider';
 import { useOnlineStatus } from '@/hooks/useOnlineStatus';
@@ -20,9 +22,11 @@ interface TopbarProps {
 }
 
 export function Topbar({ onOpenPalette, onOpenMobileNav }: TopbarProps) {
-  const { app, desk, locale, toggleLocale } = useLocale();
+  const { app, desk, home, locale, toggleLocale } = useLocale();
   const { theme, toggleTheme } = useTheme();
+  const { session, signOut } = useExperience();
   const pathname = usePathname();
+  const router = useRouter();
   const online = useOnlineStatus();
 
   const current = WORKSPACE_ROUTES.find((workspace) => workspace.href === pathname);
@@ -49,7 +53,7 @@ export function Topbar({ onOpenPalette, onOpenMobileNav }: TopbarProps) {
       {title && (
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold text-ink">{title}</p>
-          {current && <p className="text-[11px] text-ink-muted">{current.phase}</p>}
+          {current && <p className="text-[11px] text-ink-muted">{current.status}</p>}
         </div>
       )}
 
@@ -99,6 +103,33 @@ export function Topbar({ onOpenPalette, onOpenMobileNav }: TopbarProps) {
         >
           {theme === 'light' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4 text-saffron" />}
         </button>
+
+        {session ? (
+          <>
+            <span className="hidden max-w-[8rem] truncate text-xs font-semibold text-ink md:inline">
+              {session.displayName ?? home.nav.guest}
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                signOut();
+                router.push('/');
+              }}
+              className="inline-flex items-center gap-1.5 rounded-pill border border-line bg-surface px-2.5 py-1.5 text-xs font-semibold text-ink-soft transition hover:border-line-strong hover:text-ink"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">{home.nav.signOut}</span>
+            </button>
+          </>
+        ) : (
+          <Link
+            href="/login"
+            className="inline-flex items-center gap-1.5 rounded-pill border border-saffron/40 bg-saffron/10 px-2.5 py-1.5 text-xs font-semibold text-ink"
+          >
+            <LogIn className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline">{home.nav.signIn}</span>
+          </Link>
+        )}
 
         <RoleSwitcher />
       </div>

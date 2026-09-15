@@ -16,10 +16,10 @@ citizen exactly what they qualify for — with the reason, the source and the ve
 
 | | |
 |---|---|
-| Phase | **0 — Project Foundation** (complete once the checklist in `TASKS.md` is ticked) |
+| Status | Production-ready core — see `TASKS.md` for backlog |
 | Frontend | Next.js App Router + TypeScript + Tailwind + Framer Motion — design system, cinematic emblem transition, bilingual landing experience |
 | Backend | FastAPI + SQLAlchemy + Alembic — configuration, structured logging, `/health`, `/api/version` |
-| Database | PostgreSQL 16 + PostGIS (native / managed). No Docker. Tables start in Phase 2. |
+| Database | PostgreSQL 16 + PostGIS (native / managed). No Docker. Schema via Alembic. |
 
 ---
 
@@ -36,7 +36,7 @@ NitiDrishti/
 │   ├── app/
 │   │   ├── api/       routers (HTTP layer only)
 │   │   ├── core/      database, logging
-│   │   ├── models/     ORM models (Phase 2)
+│   │   ├── models/     ORM models
 │   │   ├── schemas/    Pydantic contracts
 │   │   ├── services/   business logic
 │   │   └── repositories/  data access
@@ -46,7 +46,7 @@ NitiDrishti/
 ├── storage/           raw + processed government documents (git-ignored)
 ├── docs/              architecture and engineering contracts
 ├── PROJECT_RULES.md   binding engineering rules
-└── TASKS.md           phase checklist
+└── TASKS.md           product status and backlog
 ```
 
 ---
@@ -134,6 +134,22 @@ filled with sample data.
 
 Run backend and frontend as two native processes (`uvicorn` + `next dev`). Docker is not part of this project.
 
+### Scheduled catalog refresh (batch, not live)
+
+The backend process includes scheduled catalogue refresh (`INGEST_INTERVAL_HOURS`, default 24). `INGEST_SCHEDULE_ENABLED=true` is the default outside tests.
+
+```powershell
+# Optional dedicated native process (first pass immediately, then every INGEST_INTERVAL_HOURS)
+cd backend
+if ($env:CURL_CA_BUNDLE) { Remove-Item Env:CURL_CA_BUNDLE }
+.\.venv\Scripts\Activate.ps1
+python -m scripts.run_scheduler
+```
+
+Robots.txt is fail-closed and each source waits `INGESTION_CRAWL_DELAY_SECONDS`. If a crawl already ran inside the interval, the next job skips. Tests / `APP_ENV=testing` never start the crawler. Set `INGEST_SCHEDULER_ENABLED=false` (or `INGEST_SCHEDULE_ENABLED=false`) to disable in the API process.
+
+Operator desks: `python -m scripts.bootstrap_operators` seeds one `WELFARE_OFFICER`, one `ADMIN`, and one `CSC_OPERATOR` from `BOOTSTRAP_*` env values. Self-registration stays `CITIZEN`. Sign in at `/login` as **Welfare officer** with `BOOTSTRAP_OFFICER_EMAIL`. CSC camp dispatch (`POST /api/v1/analytics/districts/{id}/csc-camp`) is officer/admin only. Guests write zero rows.
+
 ---
 
 ## Checks
@@ -164,12 +180,7 @@ version number, so anything shown to a citizen can be traced back.
 
 ---
 
-## Roadmap
+## Status
 
-Phases 0–22 are defined in the implementation roadmap: foundation → architecture →
-database → backend core → auth/RBAC → frontend shell → source registry → first real
-pipeline → data quality → explore layer → eligibility engine → profile intelligence →
-opportunities → Nyay-Mitra → policy diff → alerts → CSC & analytics → semantic search
-& RAG → PWA/offline → polish → testing & security → native production processes → final integration.
-
-`TASKS.md` tracks the active phase.
+Core platform, auth, ingestion connectors, citizen tools, and honest analytics
+are in place. Open work (catalogue coverage, jobs, GIS) is listed in `TASKS.md`.

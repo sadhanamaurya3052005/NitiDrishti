@@ -1,6 +1,6 @@
 import type { SchemeRecord } from '@/types';
 
-/** Public, official-scheme facts used until the Phase 7 ingestion tables are live. */
+/** Public, official-scheme facts used as a fallback when Postgres has no published rows. */
 export const OFFICIAL_SCHEME_CATALOG: SchemeRecord[] = [
   {
     id: 'pm-kisan',

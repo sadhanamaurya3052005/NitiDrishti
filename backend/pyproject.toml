@@ -12,6 +12,13 @@ target-version = "py311"
 select = ["E", "F", "I", "B", "UP", "N", "SIM", "RUF"]
 ignore = ["E501"]
 
+[tool.ruff.lint.per-file-ignores]
+"app/data/official_schemes.py" = ["RUF001"]
+"app/data/india_geography.py" = ["RUF001"]
+"app/services/ingestion/serialize.py" = ["RUF001"]
+"app/services/ingestion/extractors.py" = ["RUF001"]
+"app/services/assistant.py" = ["RUF001"]
+
 [tool.ruff.lint.isort]
 known-first-party = ["app"]
 

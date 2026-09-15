@@ -20,9 +20,14 @@ REDACTED_KEYS = {
     "refresh_token",
     "authorization",
     "jwt_secret_key",
+    "bootstrap_officer_password",
+    "bootstrap_admin_password",
+    "bootstrap_csc_password",
     "otp",
     "aadhaar",
     "bank_account",
+    "secret",
+    "email",
 }
 
 

@@ -2,7 +2,7 @@
 
 /**
  * Lion Capital of Ashoka with सत्यमेव जयते — civic navbar mark.
- * Illustration for this student project; not a licensed government seal file.
+ * Illustration for the product navbar; not a licensed government seal file.
  */
 export function AshokaMark({ size = 52 }: { size?: number }) {
   return (

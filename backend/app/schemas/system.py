@@ -27,4 +27,4 @@ class VersionResponse(BaseModel):
     app: str
     version: str
     environment: str
-    phase: str
+    status: str

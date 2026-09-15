@@ -1,6 +1,6 @@
 # Design system
 
-The visual contract every screen from Phase 5 onward must follow. Tokens live in
+The visual contract every screen must follow. Tokens live in
 `frontend/tailwind.config.ts`; component primitives live in `frontend/app/globals.css`.
 
 ## Palette

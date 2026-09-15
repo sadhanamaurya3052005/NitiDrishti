@@ -2,14 +2,14 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
+import { useExperience } from '@/components/providers/ExperienceProvider';
+import { PREVIEW_ROLE_STORAGE_KEY, preferredServerRole, previewRoleForSession } from '@/lib/config';
 import type { Role } from '@/types';
-
-const ROLE_STORAGE_KEY = 'nd.previewRole';
 
 interface RoleContextValue {
   role: Role;
   setRole: (role: Role) => void;
-  /** True until authentication lands, so the UI can say the role is not verified. */
+  /** False when the signed-in JWT carries a server role. */
   isPreview: boolean;
 }
 
@@ -18,24 +18,45 @@ const RoleContext = createContext<RoleContextValue | null>(null);
 /**
  * Holds the currently viewed role.
  *
- * This is a *preview* selector: it only shapes navigation. Real role assignment
- * and enforcement happen on the server in the authentication phase, and this
- * provider will read the session instead of local storage at that point.
+ * Guests still use a local preview selector. When a JWT session includes
+ * server roles, those roles win over `nd.previewRole`.
  */
 export function RoleProvider({ children }: { children: React.ReactNode }) {
   const [role, setRoleState] = useState<Role>('CITIZEN');
+  const { session } = useExperience();
+  const serverRole = preferredServerRole(session?.roles);
+  const isPreview = !serverRole;
 
   useEffect(() => {
-    const stored = window.localStorage.getItem(ROLE_STORAGE_KEY);
+    const stored = window.localStorage.getItem(PREVIEW_ROLE_STORAGE_KEY);
     if (stored) setRoleState(stored as Role);
   }, []);
 
-  const setRole = useCallback((next: Role) => {
+  useEffect(() => {
+    if (serverRole) {
+      setRoleState(serverRole);
+      window.localStorage.setItem(PREVIEW_ROLE_STORAGE_KEY, serverRole);
+      return;
+    }
+    if (!session) return;
+    const next = previewRoleForSession(session.mode);
     setRoleState(next);
-    window.localStorage.setItem(ROLE_STORAGE_KEY, next);
-  }, []);
+    window.localStorage.setItem(PREVIEW_ROLE_STORAGE_KEY, next);
+  }, [serverRole, session?.mode]);
 
-  const value = useMemo<RoleContextValue>(() => ({ role, setRole, isPreview: true }), [role, setRole]);
+  const setRole = useCallback(
+    (next: Role) => {
+      if (serverRole && !session?.roles?.includes(next)) return;
+      setRoleState(next);
+      window.localStorage.setItem(PREVIEW_ROLE_STORAGE_KEY, next);
+    },
+    [serverRole, session?.roles],
+  );
+
+  const value = useMemo<RoleContextValue>(
+    () => ({ role: serverRole ?? role, setRole, isPreview }),
+    [role, setRole, isPreview, serverRole],
+  );
 
   return <RoleContext.Provider value={value}>{children}</RoleContext.Provider>;
 }

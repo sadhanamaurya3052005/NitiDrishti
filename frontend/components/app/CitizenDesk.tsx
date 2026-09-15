@@ -6,8 +6,8 @@ import { useMemo, useRef, useState } from 'react';
 
 import { useExperience } from '@/components/providers/ExperienceProvider';
 import { useLocale } from '@/components/providers/LocaleProvider';
+import { useSchemes } from '@/hooks/useSchemes';
 import { CIVIC_SECTORS } from '@/lib/civic/sectors';
-import { OFFICIAL_SCHEME_CATALOG } from '@/lib/schemes/catalog';
 import { evaluateScheme } from '@/lib/schemes/evaluate';
 import { stackedYearlyRupees } from '@/lib/schemes/liquidity';
 import { unlockHints } from '@/lib/schemes/sensitivity';
@@ -16,11 +16,7 @@ import type { CasteCategory, SchemeCategory } from '@/types';
 
 const FILTERS: { id: 'all' | SchemeCategory; en: string; hi: string }[] = [
   { id: 'all', en: 'All', hi: 'सभी' },
-  { id: 'agriculture', en: 'Agriculture', hi: 'कृषि' },
-  { id: 'education', en: 'Education', hi: 'शिक्षा' },
-  { id: 'women', en: 'Women', hi: 'महिला' },
-  { id: 'health', en: 'Health', hi: 'स्वास्थ्य' },
-  { id: 'msme', en: 'MSME', hi: 'एमएसएमई' },
+  ...CIVIC_SECTORS.map((item) => ({ id: item.category, en: item.nameEn, hi: item.nameHi })),
 ];
 
 export function CitizenDesk() {
@@ -30,26 +26,26 @@ export function CitizenDesk() {
   const sectorId = params.get('sector');
   const sector = CIVIC_SECTORS.find((item) => item.id === sectorId);
   const [query, setQuery] = useState('');
-  const [filter, setFilter] = useState<'all' | SchemeCategory>(
-    sector && sector.category !== 'all' ? sector.category : 'all',
-  );
+  const [filter, setFilter] = useState<'all' | SchemeCategory>(sector ? sector.category : 'all');
   const [rate, setRate] = useState(1);
   const [preview, setPreview] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const { schemes, loading, error } = useSchemes({
+    category: filter,
+    q: query,
+  });
 
   const ranked = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return OFFICIAL_SCHEME_CATALOG.filter((scheme) => {
-      if (sector && sector.category === 'all') return false;
-      if (filter !== 'all' && scheme.category !== filter) return false;
-      if (!q) return true;
-      return `${scheme.name} ${scheme.nameHi} ${scheme.summary}`.toLowerCase().includes(q);
-    }).map((scheme) => ({ scheme, evaluation: evaluateScheme(scheme, profile) }));
-  }, [filter, profile, query, sector]);
+    return schemes
+      .filter((scheme) => filter === 'all' || scheme.category === filter)
+      .map((scheme) => ({ scheme, evaluation: evaluateScheme(scheme, profile) }));
+  }, [filter, profile, schemes]);
 
   const eligible = ranked.filter((item) => item.evaluation.status === 'ELIGIBLE');
   const yearly = stackedYearlyRupees(eligible.map((item) => item.scheme));
-  const neededDocs = Array.from(new Set(OFFICIAL_SCHEME_CATALOG.flatMap((scheme) => scheme.documents.map((doc) => doc.id))));
+  const neededDocs = Array.from(
+    new Set(schemes.flatMap((scheme) => scheme.documents.map((doc) => doc.id))),
+  );
   const present = neededDocs.filter((id) => profile.documents[id]).length;
   const readiness = Math.round((present / Math.max(1, neededDocs.length)) * 100);
 
@@ -256,16 +252,15 @@ export function CitizenDesk() {
               </button>
             ))}
           </div>
-          {sector && sector.category === 'all' ? (
-            <p className="rounded-xl border border-line bg-surface-muted px-3 py-2 text-xs text-ink-muted">
-              {locale === 'hi'
-                ? `${sector.nameHi}: इस क्षेत्र की योजनाएँ ingestion के बाद आयेंगी। अभी खाली फ़िल्टर।`
-                : `${sector.nameEn}: no catalog rows yet for this sector. Empty on purpose.`}
+          {error ? (
+            <p className="nd-card px-5 py-10 text-center text-sm text-ink-muted">
+              {locale === 'hi' ? 'सूची अभी उपलब्ध नहीं।' : 'Catalog is unavailable right now.'}
             </p>
           ) : null}
-
-          {ranked.length === 0 ? (
-            <p className="nd-card px-5 py-10 text-center text-sm text-ink-muted">{home.schemes.empty}</p>
+          {!loading && !error && ranked.length === 0 ? (
+            <p className="nd-card px-5 py-10 text-center text-sm text-ink-muted">
+              {query.trim() ? home.schemes.empty : home.schemes.emptyCatalog}
+            </p>
           ) : null}
 
           {ranked.map(({ scheme, evaluation }) => {
@@ -343,7 +338,7 @@ export function CitizenDesk() {
                   {evaluation.status === 'ELIGIBLE' ? (
                     <button
                       type="button"
-                      onClick={() => enqueueDossier(name)}
+                      onClick={() => enqueueDossier(name, scheme.id)}
                       className="ml-auto rounded-pill bg-ink px-3 py-1 text-xs font-semibold text-canvas"
                     >
                       {locale === 'hi' ? 'एक्शन डोज़ियर कतार' : 'Queue Action Dossier'}

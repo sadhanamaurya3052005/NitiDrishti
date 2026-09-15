@@ -94,7 +94,7 @@ export function CivicMarquee() {
       <div className="nd-section mb-7 text-center">
         <h2 className="font-deva text-display font-semibold tracking-tight text-ink">{showcase.marquee.title}</h2>
       </div>
-      <div className="relative overflow-hidden py-4">
+      <div className="relative overflow-x-clip overflow-y-visible py-6">
         <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-12 bg-gradient-to-r from-canvas to-transparent sm:w-20" />
         <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 bg-gradient-to-l from-canvas to-transparent sm:w-20" />
         <div ref={trackRef} data-motion="keep" className="flex w-max items-start gap-3 px-3 sm:gap-5 will-change-transform">
@@ -115,13 +115,16 @@ export function CivicMarquee() {
                   if (open) hideName();
                   else showName(key);
                 }}
-                className="relative flex w-[5.6rem] shrink-0 flex-col items-center sm:w-[6.2rem]"
+                className={cn(
+                  'relative flex w-[5.6rem] shrink-0 flex-col items-center overflow-visible sm:w-[6.2rem]',
+                  open && 'z-20',
+                )}
                 aria-label={name}
               >
                 <span
                   className={cn(
                     'flex h-[3.7rem] w-[3.7rem] items-center justify-center rounded-full text-white shadow-[0_10px_24px_-12px_rgba(0,0,0,0.45)] ring-4 ring-white/80 transition duration-200 dark:ring-white/10 sm:h-[4.1rem] sm:w-[4.1rem]',
-                    open && 'scale-110 ring-saffron/50',
+                    open && 'z-20 scale-110 ring-saffron/50',
                   )}
                   style={{ backgroundColor: sector.color }}
                 >
@@ -131,7 +134,10 @@ export function CivicMarquee() {
                   {name}
                 </span>
                 {open ? (
-                  <span className="absolute -top-1 left-1/2 z-20 w-max max-w-[10rem] -translate-x-1/2 -translate-y-full rounded-pill bg-[#0b1f3a] px-2.5 py-1 text-center text-[11px] font-semibold text-white shadow-lift dark:bg-canvas-tint dark:text-ink">
+                  <span
+                    role="tooltip"
+                    className="pointer-events-none absolute left-1/2 top-[4.55rem] z-30 w-max max-w-[11rem] translate-x-[calc(-32%+0.65rem)] rounded-pill bg-[#0b1f3a] px-2.5 py-1 text-center text-[11px] font-semibold leading-snug text-white shadow-lift dark:bg-canvas-tint dark:text-ink sm:top-[4.9rem]"
+                  >
                     {name}
                   </span>
                 ) : null}

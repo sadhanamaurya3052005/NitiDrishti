@@ -1,7 +1,6 @@
 """Enable the PostgreSQL extensions NitiDrishti relies on.
 
-The Docker image runs `database/init/01-extensions.sql` automatically. A managed
-database (Neon, Supabase, RDS) has no init hook, so run this once instead:
+Run once against the database in `.env` (local PostgreSQL or a managed URL):
 
     python -m scripts.init_extensions
 
@@ -20,10 +19,10 @@ from app.core.database import engine
 
 # (extension, why we need it, required?)
 EXTENSIONS: list[tuple[str, str, bool]] = [
-    ("postgis", "district geometry for the analytics cockpit (Phase 16)", False),
-    ("pg_trgm", "fuzzy title matching during deduplication (Phase 8)", True),
-    ("unaccent", "accent-insensitive bilingual search (Phase 9)", True),
-    ("vector", "semantic search embeddings (Phase 17)", False),
+    ("postgis", "district geometry for the analytics cockpit", False),
+    ("pg_trgm", "fuzzy title matching during deduplication", True),
+    ("unaccent", "accent-insensitive bilingual search", True),
+    ("vector", "semantic search embeddings", False),
 ]
 
 
@@ -52,7 +51,7 @@ def main() -> int:
         print(f"\nRequired extensions missing: {', '.join(failures)}")
         return 1
 
-    print("\nDatabase is ready for Phase 2 migrations.")
+    print("\nDatabase is ready for Alembic migrations.")
     return 0
 
 

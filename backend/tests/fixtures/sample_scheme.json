@@ -1,0 +1,13 @@
+{
+  "schemes": [
+    {
+      "code": "PM-KISAN",
+      "slug": "pm-kisan-json",
+      "name": "PM-Kisan Samman Nidhi",
+      "name_hi": "प्रधानमंत्री किसान सम्मान निधि",
+      "summary": "Income support for landholding farmer families through three instalments each year.",
+      "category": "agriculture",
+      "source_url": "https://pmkisan.gov.in/"
+    }
+  ]
+}

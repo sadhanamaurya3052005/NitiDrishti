@@ -1,4 +1,4 @@
-"""Phase 0 smoke tests: the app boots and reports its own state honestly."""
+"""Smoke tests: the app boots and reports its own state honestly."""
 
 from __future__ import annotations
 
@@ -29,7 +29,10 @@ def test_health_status_matches_database_state() -> None:
 def test_version_endpoint() -> None:
     response = client.get("/api/version")
     assert response.status_code == 200
-    assert response.json()["app"] == "NitiDrishti"
+    body = response.json()
+    assert body["app"] == "NitiDrishti"
+    assert "phase" not in body
+    assert body["status"] == "production-ready core"
 
 
 def test_openapi_schema_available() -> None:

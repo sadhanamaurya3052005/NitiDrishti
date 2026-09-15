@@ -9,7 +9,6 @@ import { useLocale } from '@/components/providers/LocaleProvider';
 import { Reveal } from '@/components/motion/Reveal';
 import { getSchemes } from '@/lib/api';
 import { cn } from '@/lib/cn';
-import { OFFICIAL_SCHEME_CATALOG } from '@/lib/schemes/catalog';
 import { evaluateScheme, type SchemeEvaluation } from '@/lib/schemes/evaluate';
 import type { CasteCategory, SchemeCategory, SchemeRecord } from '@/types';
 
@@ -34,7 +33,7 @@ export function SchemeDirectory({ embedded = false }: { embedded?: boolean }) {
   const [category, setCategory] = useState<'all' | SchemeCategory>('all');
   const [query, setQuery] = useState('');
   const [state, setState] = useState('all');
-  const [schemes, setSchemes] = useState<SchemeRecord[]>(OFFICIAL_SCHEME_CATALOG);
+  const [schemes, setSchemes] = useState<SchemeRecord[]>([]);
   const [fromApi, setFromApi] = useState(false);
   const [active, setActive] = useState<{ scheme: SchemeRecord; evaluation: SchemeEvaluation } | null>(null);
 
@@ -168,7 +167,9 @@ export function SchemeDirectory({ embedded = false }: { embedded?: boolean }) {
         </div>
 
         {visible.length === 0 ? (
-          <p className="mt-10 text-sm text-ink-muted">{home.schemes.empty}</p>
+          <p className="mt-10 text-sm text-ink-muted">
+            {query.trim() ? home.schemes.empty : home.schemes.emptyCatalog}
+          </p>
         ) : (
           <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {visible.map((scheme) => {
@@ -230,7 +231,7 @@ export function SchemeDirectory({ embedded = false }: { embedded?: boolean }) {
                       type="button"
                       onClick={() => {
                         toggleSaveScheme(scheme.id);
-                        enqueueDossier(name);
+                        enqueueDossier(name, scheme.id);
                       }}
                       className="inline-flex items-center gap-1 rounded-pill border border-line px-3 py-2 text-xs font-semibold"
                     >

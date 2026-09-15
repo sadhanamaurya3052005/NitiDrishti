@@ -1,6 +1,6 @@
 import { cn } from '@/lib/cn';
 
-/** Phase / status chip. Never used for invented impact numbers. */
+/** Status chip. Never used for invented impact numbers. */
 export function MetricBadge({
   label,
   note,

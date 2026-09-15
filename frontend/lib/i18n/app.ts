@@ -46,7 +46,7 @@ export interface AppCopy {
     locked: string;
   };
   workspaces: Record<WorkspaceId, WorkspaceShellCopy>;
-  tools: Record<ToolId, { name: string; phase: string }>;
+  tools: Record<ToolId, { name: string; status: string }>;
 }
 
 const en: AppCopy = {
@@ -65,16 +65,16 @@ const en: AppCopy = {
     online: 'Online',
     offline: 'Offline — local engine',
     roleLabel: 'Viewing as',
-    previewNote: 'Role preview — real sign-in arrives with authentication',
+    previewNote: 'Guest role is a preview. A signed-in session uses the server role.',
   },
   intro: {
-    statusLabel: 'Build status',
-    plannedTitle: 'What this workspace will contain',
+    statusLabel: 'Desk',
+    plannedTitle: 'What this workspace contains',
     dataNote:
       'Nothing here is filled with sample data. Every panel appears only once it is backed by information collected from an official source.',
-    emptyTitle: 'No data yet',
+    emptyTitle: 'No data from official sources yet',
     emptyBody:
-      'The ingestion pipeline has not been connected to this workspace. Once official sources are collected and verified, this area fills automatically.',
+      'This desk fills after the next official-source refresh. Nothing here is sample data.',
   },
   palette: {
     placeholder: 'Jump to a workspace or tool…',
@@ -82,7 +82,7 @@ const en: AppCopy = {
     tools: 'Smart tools',
     empty: 'Nothing matches that',
     hint: 'Enter to open · Esc to close',
-    locked: 'Not built yet',
+    locked: 'Not available on this desk',
   },
   workspaces: {
     citizen: {
@@ -146,12 +146,12 @@ const en: AppCopy = {
     },
   },
   tools: {
-    explore: { name: 'Explore schemes & opportunities', phase: 'Phase 9' },
-    eligibility: { name: 'Eligibility checker', phase: 'Phase 10' },
-    whatif: { name: 'What-if simulator', phase: 'Phase 11' },
-    compare: { name: 'Compare schemes', phase: 'Phase 11' },
-    alerts: { name: 'Alerts & deadlines', phase: 'Phase 15' },
-    assistant: { name: 'Assistant with citations', phase: 'Phase 17' },
+    explore: { name: 'Explore schemes & opportunities', status: 'Scheme search' },
+    eligibility: { name: 'Eligibility checker', status: 'AST engine' },
+    whatif: { name: 'What-if simulator', status: 'Sensitivity' },
+    compare: { name: 'Compare schemes', status: 'Comparison' },
+    alerts: { name: 'Alerts & deadlines', status: 'Alerts' },
+    assistant: { name: 'Assistant with citations', status: 'Assistant' },
   },
 };
 
@@ -171,16 +171,16 @@ const hi: AppCopy = {
     online: 'ऑनलाइन',
     offline: 'ऑफ़लाइन — स्थानीय इंजन',
     roleLabel: 'इस रूप में',
-    previewNote: 'भूमिका पूर्वावलोकन — वास्तविक साइन-इन प्रमाणीकरण के साथ आएगा',
+    previewNote: 'अतिथि भूमिका पूर्वावलोकन है। साइन-इन सत्र सर्वर भूमिका का उपयोग करता है।',
   },
   intro: {
-    statusLabel: 'निर्माण स्थिति',
-    plannedTitle: 'इस वर्कस्पेस में क्या होगा',
+    statusLabel: 'डेस्क',
+    plannedTitle: 'इस वर्कस्पेस में क्या है',
     dataNote:
       'यहाँ कुछ भी नमूना डेटा से नहीं भरा गया है। हर पैनल तभी दिखेगा जब उसके पीछे किसी आधिकारिक स्रोत से एकत्र जानकारी मौजूद होगी।',
-    emptyTitle: 'अभी कोई डेटा नहीं',
+    emptyTitle: 'आधिकारिक स्रोतों से अभी कोई डेटा नहीं',
     emptyBody:
-      'इस वर्कस्पेस से ingestion पाइपलाइन जुड़ी नहीं है। जैसे ही आधिकारिक स्रोतों से जानकारी आकर सत्यापित होगी, यह क्षेत्र स्वतः भर जाएगा।',
+      'यह डेस्क अगले आधिकारिक स्रोत रिफ़्रेश के बाद भरेगा। यहाँ नमूना डेटा नहीं है।',
   },
   palette: {
     placeholder: 'वर्कस्पेस या टूल खोजें…',
@@ -188,7 +188,7 @@ const hi: AppCopy = {
     tools: 'स्मार्ट टूल्स',
     empty: 'कुछ मेल नहीं खाया',
     hint: 'खोलने के लिए Enter · बंद करने के लिए Esc',
-    locked: 'अभी बना नहीं',
+    locked: 'इस डेस्क पर उपलब्ध नहीं',
   },
   workspaces: {
     citizen: {
@@ -252,12 +252,12 @@ const hi: AppCopy = {
     },
   },
   tools: {
-    explore: { name: 'योजनाएँ एवं अवसर देखें', phase: 'फेज़ 9' },
-    eligibility: { name: 'पात्रता जाँच', phase: 'फेज़ 10' },
-    whatif: { name: 'व्हाट-इफ़ सिम्युलेटर', phase: 'फेज़ 11' },
-    compare: { name: 'योजनाओं की तुलना', phase: 'फेज़ 11' },
-    alerts: { name: 'अलर्ट एवं समय-सीमा', phase: 'फेज़ 15' },
-    assistant: { name: 'प्रमाण-सहित सहायक', phase: 'फेज़ 17' },
+    explore: { name: 'योजनाएँ एवं अवसर देखें', status: 'योजना खोज' },
+    eligibility: { name: 'पात्रता जाँच', status: 'AST इंजन' },
+    whatif: { name: 'व्हाट-इफ़ सिम्युलेटर', status: 'संवेदनशीलता' },
+    compare: { name: 'योजनाओं की तुलना', status: 'तुलना' },
+    alerts: { name: 'अलर्ट एवं समय-सीमा', status: 'अलर्ट' },
+    assistant: { name: 'प्रमाण-सहित सहायक', status: 'सहायक' },
   },
 };
 

@@ -1,6 +1,6 @@
 import type { ToolId } from '@/lib/i18n/app';
 
-/** Smart-tool routes from Docs3 Phases 9–17. */
+/** Smart-tool routes for the application shell. */
 export const TOOL_ROUTES: Record<ToolId, string> = {
   explore: '/schemes',
   eligibility: '/eligibility',

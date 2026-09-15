@@ -1,27 +1,65 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { EligibilityInspector } from '@/components/site/EligibilityInspector';
 import { MetricBadge } from '@/components/ui/MetricBadge';
 import { useExperience } from '@/components/providers/ExperienceProvider';
 import { useLocale } from '@/components/providers/LocaleProvider';
-import { OFFICIAL_SCHEME_CATALOG } from '@/lib/schemes/catalog';
-import { evaluateScheme } from '@/lib/schemes/evaluate';
+import { useSchemes } from '@/hooks/useSchemes';
+import { evaluateEligibility } from '@/lib/api';
+import { evaluateScheme, type SchemeEvaluation } from '@/lib/schemes/evaluate';
 import type { CasteCategory } from '@/types';
 
 export function EligibilityDesk() {
   const { desk, locale, home } = useLocale();
   const { profile, patchProfile } = useExperience();
+  const { schemes, loading, error } = useSchemes();
   const [activeId, setActiveId] = useState<string | null>(null);
+  const [serverEvals, setServerEvals] = useState<Record<string, SchemeEvaluation> | null>(null);
+
+  useEffect(() => {
+    if (!schemes.length) {
+      setServerEvals(null);
+      return;
+    }
+    let cancelled = false;
+    void evaluateEligibility({
+      scheme_ids: schemes.map((item) => item.id),
+      profile: {
+        age: profile.age,
+        income: profile.income,
+        land_hectares: profile.landHectares,
+        gender: profile.gender,
+        category: profile.category,
+        occupation: profile.occupation,
+      },
+    })
+      .then((payload) => {
+        if (cancelled) return;
+        const next: Record<string, SchemeEvaluation> = {};
+        for (const item of payload.evaluations) {
+          next[item.evaluation.schemeId] = item.evaluation;
+        }
+        setServerEvals(next);
+      })
+      .catch(() => {
+        if (!cancelled) setServerEvals(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [profile, schemes]);
 
   const ranked = useMemo(
     () =>
-      OFFICIAL_SCHEME_CATALOG.map((scheme) => ({
-        scheme,
-        evaluation: evaluateScheme(scheme, profile),
-      })).sort((a, b) => b.evaluation.score - a.evaluation.score),
-    [profile],
+      schemes
+        .map((scheme) => ({
+          scheme,
+          evaluation: serverEvals?.[scheme.id] ?? evaluateScheme(scheme, profile),
+        }))
+        .sort((a, b) => b.evaluation.score - a.evaluation.score),
+    [profile, schemes, serverEvals],
   );
 
   const active = ranked.find((item) => item.scheme.id === activeId);
@@ -87,6 +125,17 @@ export function EligibilityDesk() {
           />
         </label>
       </div>
+
+      {error ? (
+        <p className="nd-card mt-6 px-5 py-10 text-center text-sm text-ink-muted">
+          {locale === 'hi' ? 'सूची अभी उपलब्ध नहीं।' : 'Catalog is unavailable right now.'}
+        </p>
+      ) : null}
+      {!loading && !error && ranked.length === 0 ? (
+        <p className="nd-card mt-6 px-5 py-10 text-center text-sm text-ink-muted">
+          {home.schemes.emptyCatalog}
+        </p>
+      ) : null}
 
       <ul className="mt-6 space-y-3">
         {ranked.map(({ scheme, evaluation }) => (

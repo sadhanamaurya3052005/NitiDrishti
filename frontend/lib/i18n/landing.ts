@@ -138,7 +138,7 @@ const en: LandingCopy = {
           'Explainable eligibility with a reason for every condition',
           'What-if simulator, document checklist and Action Dossier',
         ],
-        status: 'Builds in Phase 10–12',
+        status: 'Live — schemes, eligibility, dossiers',
       },
       {
         id: 'csc',
@@ -149,7 +149,7 @@ const en: LandingCopy = {
           'Large controls, high contrast, five-step flow',
           'Ink-saving monochrome print for the counter printer',
         ],
-        status: 'Builds in Phase 16',
+        status: 'Live — assisted onboarding',
       },
       {
         id: 'nyaymitra',
@@ -160,7 +160,7 @@ const en: LandingCopy = {
           'Extracts clauses and machine-readable eligibility rules',
           'Old vs new policy diff with evidence and impact',
         ],
-        status: 'Builds in Phase 13–14',
+        status: 'Live — policy catalog and version diff',
       },
       {
         id: 'officer',
@@ -171,7 +171,7 @@ const en: LandingCopy = {
           'Drop-off funnel that shows where citizens are lost',
           'Every number traceable to a database query',
         ],
-        status: 'Builds in Phase 16',
+        status: 'Live — coverage counts; funnel when telemetry exists',
       },
       {
         id: 'analytics',
@@ -182,7 +182,7 @@ const en: LandingCopy = {
           'Map-based gap analysis on real geometry',
           'Targeted intervention instead of guesswork',
         ],
-        status: 'Builds in Phase 16',
+        status: 'Live — published counts; maps when PostGIS is on',
       },
     ],
   },
@@ -337,7 +337,7 @@ const hi: LandingCopy = {
           'हर शर्त का कारण दिखाने वाली पात्रता',
           'व्हाट-इफ़ सिम्युलेटर, दस्तावेज़ सूची और एक्शन डोज़ियर',
         ],
-        status: 'फेज़ 10–12 में',
+        status: 'उपलब्ध — योजनाएँ, पात्रता, डोज़ियर',
       },
       {
         id: 'csc',
@@ -348,7 +348,7 @@ const hi: LandingCopy = {
           'बड़े नियंत्रण, उच्च कंट्रास्ट, पाँच-चरणीय प्रवाह',
           'काउंटर प्रिंटर के लिए स्याही-बचत मोनोक्रोम प्रिंट',
         ],
-        status: 'फेज़ 16 में',
+        status: 'उपलब्ध — सहायता-युक्त ऑनबोर्डिंग',
       },
       {
         id: 'nyaymitra',
@@ -359,7 +359,7 @@ const hi: LandingCopy = {
           'क्लॉज़ और मशीन-पठनीय पात्रता नियम निकालता है',
           'पुरानी बनाम नई नीति का अंतर, प्रमाण और प्रभाव के साथ',
         ],
-        status: 'फेज़ 13–14 में',
+        status: 'उपलब्ध — नीति कैटलॉग और संस्करण अंतर',
       },
       {
         id: 'officer',
@@ -370,7 +370,7 @@ const hi: LandingCopy = {
           'ड्रॉप-ऑफ़ फ़नल, जो बताता है नागरिक कहाँ छूट रहे हैं',
           'हर आँकड़ा डेटाबेस क्वेरी से जुड़ा हुआ',
         ],
-        status: 'फेज़ 16 में',
+        status: 'उपलब्ध — कवरेज गणना; फ़नल टेलीमेट्री आने पर',
       },
       {
         id: 'analytics',
@@ -381,7 +381,7 @@ const hi: LandingCopy = {
           'वास्तविक भौगोलिक डेटा पर नक्शा-आधारित अंतर विश्लेषण',
           'अनुमान की जगह लक्षित हस्तक्षेप',
         ],
-        status: 'फेज़ 16 में',
+        status: 'उपलब्ध — प्रकाशित गणना; PostGIS चालू होने पर नक्शा',
       },
     ],
   },

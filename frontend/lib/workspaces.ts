@@ -8,9 +8,9 @@ export interface WorkspaceRoute {
   href: string;
   icon: LucideIcon;
   accent: Accent;
-  /** Roadmap phase that fills this workspace with real functionality. */
-  phase: string;
-  /** Roles allowed here once authorisation is enforced on the server (Phase 4). */
+  /** Short desk label shown in the topbar and command palette. */
+  status: string;
+  /** Roles allowed on the server (`require_workspace`). */
   roles: readonly Role[];
 }
 
@@ -21,7 +21,7 @@ export const WORKSPACE_ROUTES: readonly WorkspaceRoute[] = [
     href: '/citizen',
     icon: Users,
     accent: 'mint',
-    phase: 'Phase 10–12',
+    status: 'Citizen desk',
     roles: ['CITIZEN', 'STUDENT', 'CSC_OPERATOR', 'ADMIN'],
   },
   {
@@ -29,7 +29,7 @@ export const WORKSPACE_ROUTES: readonly WorkspaceRoute[] = [
     href: '/csc',
     icon: Store,
     accent: 'peach',
-    phase: 'Phase 16',
+    status: 'CSC desk',
     roles: ['CSC_OPERATOR', 'ADMIN'],
   },
   {
@@ -37,7 +37,7 @@ export const WORKSPACE_ROUTES: readonly WorkspaceRoute[] = [
     href: '/nyay-mitra',
     icon: Scale,
     accent: 'violet',
-    phase: 'Phase 13–14',
+    status: 'Policy intelligence',
     roles: ['POLICY_ANALYST', 'WELFARE_OFFICER', 'ADMIN'],
   },
   {
@@ -45,7 +45,7 @@ export const WORKSPACE_ROUTES: readonly WorkspaceRoute[] = [
     href: '/welfare',
     icon: Landmark,
     accent: 'primary',
-    phase: 'Phase 16',
+    status: 'Welfare desk',
     roles: ['WELFARE_OFFICER', 'ADMIN'],
   },
   {
@@ -53,7 +53,7 @@ export const WORKSPACE_ROUTES: readonly WorkspaceRoute[] = [
     href: '/analytics',
     icon: BarChart3,
     accent: 'sky',
-    phase: 'Phase 16',
+    status: 'District analytics',
     roles: ['WELFARE_OFFICER', 'POLICY_ANALYST', 'ADMIN'],
   },
 ];

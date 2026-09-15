@@ -4,8 +4,8 @@ import { useEffect, useState } from 'react';
 
 /**
  * Real connectivity state. Offline handling matters here because the platform
- * is meant to work at rural kiosks with unstable links (offline data caching
- * lands in Phase 18).
+ * is meant to work at rural kiosks with unstable links. The PWA caches the
+ * shell when a service worker is registered.
  */
 export function useOnlineStatus(): boolean {
   const [online, setOnline] = useState(true);
