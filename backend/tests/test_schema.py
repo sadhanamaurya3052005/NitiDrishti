@@ -11,8 +11,8 @@ from app.models import PRODUCTION_TABLES
 
 
 def test_production_table_count() -> None:
-    assert len(PRODUCTION_TABLES) == 25
-    assert len(set(PRODUCTION_TABLES)) == 25
+    assert len(PRODUCTION_TABLES) == 26
+    assert len(set(PRODUCTION_TABLES)) == 26
 
 
 def test_all_production_tables_are_mapped() -> None:

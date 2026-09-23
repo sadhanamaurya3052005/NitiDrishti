@@ -14,10 +14,19 @@ class SchemeCatalogService:
     def __init__(self, session: Session) -> None:
         self.repo = SchemeRepository(session)
 
-    def list_payload(self, *, category: str | None = None, q: str | None = None) -> dict:
+    def list_payload(
+        self,
+        *,
+        category: str | None = None,
+        q: str | None = None,
+        limit: int = 100,
+        offset: int = 0,
+    ) -> dict:
         published = self.repo.published_count()
         if published:
-            rows = self.repo.list_current(category=category, q=q, statuses=("published",))
+            rows = self.repo.list_current(
+                category=category, q=q, statuses=("published",), limit=limit, offset=offset
+            )
             return {
                 "schemes": [to_catalog_record(scheme, version, department) for scheme, version, department in rows],
                 "source": "postgres",
@@ -104,6 +113,69 @@ class SchemeCatalogService:
                 }
             )
         return updates
+
+    def list_review_queue(self) -> dict:
+        from app.services.eligibility.conflicts import detect_rule_conflicts
+
+        rows = self.repo.list_needs_review()
+        schemes = []
+        for scheme, version, department in rows:
+            record = to_catalog_record(scheme, version, department)
+            conflicts = detect_rule_conflicts(list(version.rules))
+            record.update(
+                {
+                    "status": scheme.status,
+                    "versionNumber": version.version_number,
+                    "retrievedAt": None if version.retrieved_at is None else version.retrieved_at.isoformat(),
+                    "ruleCount": len(version.rules),
+                    "reasons": _review_reasons(version, conflicts),
+                    "conflicts": conflicts,
+                }
+            )
+            schemes.append(record)
+        return {"schemes": schemes, "count": len(schemes)}
+
+    def review_scheme(self, *, scheme_id: str, action: str, user, request_id: str) -> dict:
+        from app.core.exceptions import BusinessRuleError, ForbiddenError
+        from app.core.rbac import has_any_role
+        from app.repositories.audit import AuditRepository
+
+        if not has_any_role((role.code for role in user.roles), ("POLICY_ANALYST", "WELFARE_OFFICER", "ADMIN")):
+            raise ForbiddenError("Insufficient role for review")
+        row = self.repo.get_by_id_or_slug(scheme_id)
+        if row is None:
+            raise NotFoundError(f"Scheme not found: {scheme_id}")
+        if row.status != "needs_review":
+            raise BusinessRuleError("Only needs_review schemes can be approved or rejected")
+        if action == "approve":
+            row.status = "published"
+        elif action == "reject":
+            row.status = "archived"
+        else:
+            raise BusinessRuleError("Review action must be approve or reject")
+        AuditRepository(self.repo.session).record(
+            action="review_approve",
+            actor_user_id=user.id,
+            request_id=request_id,
+            entity_type="scheme",
+            entity_id=str(row.id),
+            detail=action,
+        )
+        self.repo.session.commit()
+        return {"id": row.slug, "status": row.status, "action": action}
+
+
+def _review_reasons(version, conflicts: list) -> list[str]:
+    reasons: list[str] = []
+    if len((version.summary or "").strip()) < 40:
+        reasons.append("thin_summary")
+    if not version.rules:
+        reasons.append("no_rules")
+    if conflicts:
+        reasons.append("income_cap_conflict")
+    if not reasons:
+        reasons.append("needs_review")
+    return reasons
 
 
 def _filter_static(category: str | None, q: str | None) -> list[dict]:

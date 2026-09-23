@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session, selectinload
 
 from app.models.identity import Role, User, UserRole
@@ -37,6 +37,51 @@ class UserRepository(BaseRepository[User]):
         )
         if exists is None:
             self.session.add(UserRole(user_id=user.id, role_id=role.id))
+
+    def get_directory(self, user_id: UUID) -> User | None:
+        stmt = (
+            select(User)
+            .options(selectinload(User.roles))
+            .where(User.id == user_id, User.deleted_at.is_(None))
+        )
+        return self.session.scalar(stmt)
+
+    def list_directory(self, *, limit: int = 40, email: str | None = None) -> list[User]:
+        stmt = (
+            select(User)
+            .options(selectinload(User.roles))
+            .where(User.deleted_at.is_(None))
+            .order_by(User.created_at.desc())
+            .limit(min(max(limit, 1), 100))
+        )
+        if email:
+            stmt = stmt.where(func.lower(User.email) == email.strip().lower())
+        return list(self.session.scalars(stmt).unique().all())
+
+    def replace_roles(self, user: User, roles: list[Role]) -> None:
+        self.session.execute(delete(UserRole).where(UserRole.user_id == user.id))
+        seen: set[UUID] = set()
+        for role in roles:
+            if role.id in seen:
+                continue
+            seen.add(role.id)
+            self.session.add(UserRole(user_id=user.id, role_id=role.id))
+        self.session.flush()
+        self.session.expire(user, ["roles"])
+
+    def count_active_with_role(self, code: str) -> int:
+        stmt = (
+            select(func.count())
+            .select_from(User)
+            .join(UserRole, UserRole.user_id == User.id)
+            .join(Role, Role.id == UserRole.role_id)
+            .where(
+                Role.code == code,
+                User.is_active.is_(True),
+                User.deleted_at.is_(None),
+            )
+        )
+        return int(self.session.scalar(stmt) or 0)
 
     def list_active_with_role(self, code: str) -> list[User]:
         stmt = (

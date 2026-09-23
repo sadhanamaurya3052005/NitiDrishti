@@ -2,6 +2,7 @@
 
 from app.repositories.alerts import AlertRepository
 from app.repositories.analytics import AnalyticsRepository
+from app.repositories.applications import ApplicationRepository
 from app.repositories.audit import AuditRepository
 from app.repositories.base import BaseRepository
 from app.repositories.dossiers import DossierRepository
@@ -29,6 +30,7 @@ from app.repositories.users import UserRepository
 __all__ = [
     "AlertRepository",
     "AnalyticsRepository",
+    "ApplicationRepository",
     "AuditRepository",
     "BaseRepository",
     "DossierRepository",

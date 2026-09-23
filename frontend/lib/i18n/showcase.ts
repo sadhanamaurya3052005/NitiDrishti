@@ -76,11 +76,11 @@ const en: ShowcaseCopy = {
       {
         id: 'csc',
         kicker: '02  CSC kiosk terminal',
-        name: 'A two-minute intake that survives a blackout.',
+        name: 'A two-minute intake with a local print queue.',
         target: 'Village Level Entrepreneurs and panchayat operators.',
         scope: 'Keyboard-first HUD, local IndexedDB queue, dual print (80mm / A4), F12 sync when the net returns.',
         href: '/csc',
-        chips: ['PWA', 'IndexedDB', 'Thermal / A4'],
+        chips: ['IndexedDB', 'Thermal / A4'],
       },
       {
         id: 'officer',
@@ -89,7 +89,7 @@ const en: ShowcaseCopy = {
         target: 'Block and district welfare officers.',
         scope: 'GeoJSON layer when official files exist, 5-stage funnel from live rows, gazette drop, hypothetical cap slider.',
         href: '/welfare',
-        chips: ['PostGIS', 'Funnel', 'Gazette diff'],
+        chips: ['TopoJSON', 'Funnel', 'Gazette diff'],
       },
     ],
   },
@@ -109,7 +109,7 @@ const en: ShowcaseCopy = {
       {
         kicker: 'Three desks, one truth',
         title: 'Citizen, CSC, and welfare command',
-        body: 'The homepage only routes. Each desk is a real workspace — vernacular query and a local vault for families, an offline kiosk for the village operator, a map and gazette delta for the officer.',
+        body: 'The homepage only routes. Each desk is a real workspace — vernacular query and a local vault for families, a kiosk queue on this device for the village operator, a map and gazette delta for the officer.',
       },
       {
         kicker: 'Privacy by design',
@@ -126,7 +126,7 @@ const en: ShowcaseCopy = {
       {
         id: 'dpdpa',
         label: 'DPDPA 2023 design',
-        hover: 'Guest writes 0 server rows. Raw Aadhaar digits are never a column. Right-to-forget is a hard delete once accounts exist.',
+        hover: 'Guest writes 0 server rows. Raw Aadhaar digits are never a column. Signed-in Right to Forget is DELETE /api/v1/auth/account.',
       },
       {
         id: 'mask',
@@ -145,8 +145,8 @@ const en: ShowcaseCopy = {
       },
       {
         id: 'pwa',
-        label: 'Offline-ready PWA',
-        hover: 'Production registers a service worker. Localhost does not, so you are not fighting a stale cache. IndexedDB holds the kiosk queue on this device.',
+        label: 'Kiosk queue on device',
+        hover: 'IndexedDB can hold the CSC dossier queue. A service worker may keep a published-scheme snapshot from the last successful fetch — not a full offline app.',
       },
     ],
   },
@@ -157,7 +157,7 @@ const en: ShowcaseCopy = {
     statutory: 'Statutory alignment',
     statutoryItems: ['DPDPA 2023', 'Aadhaar Act Sec. 29 (no full ID display)', 'IT Act 2000 — lawful processing'],
     engine: 'What is running now',
-    engineItems: ['Deterministic AST (client)', 'FastAPI + PostgreSQL', 'IndexedDB kiosk queue', 'PWA (production)'],
+    engineItems: ['Deterministic AST (client)', 'FastAPI + PostgreSQL', 'IndexedDB kiosk queue'],
     open: 'Open civic alignment',
     openBody: 'Ingestion targets official government HTML, PDFs and CSV. data.gov.in is a reference ecosystem — not a partnership badge.',
   },
@@ -191,11 +191,11 @@ const hi: ShowcaseCopy = {
       {
         id: 'csc',
         kicker: '02  CSC कियोस्क टर्मिनल',
-        name: 'दो मिनट का इनटेक जो ब्लैकआउट सहे।',
+        name: 'दो मिनट का इनटेक, स्थानीय प्रिंट कतार के साथ।',
         target: 'ग्राम स्तरीय उद्यमी और पंचायत संचालक।',
         scope: 'कीबोर्ड-प्रथम HUD, IndexedDB कतार, 80mm / A4 प्रिंट, नेट आने पर F12 सिंक।',
         href: '/csc',
-        chips: ['PWA', 'IndexedDB', 'थर्मल / A4'],
+        chips: ['IndexedDB', 'थर्मल / A4'],
       },
       {
         id: 'officer',
@@ -204,7 +204,7 @@ const hi: ShowcaseCopy = {
         target: 'ब्लॉक और ज़िला कल्याण अधिकारी।',
         scope: 'आधिकारिक GeoJSON आने पर परत, लाइव पंक्तियों से फ़नल, राजपत्र ड्रॉप, काल्पनिक स्लैब स्लाइडर।',
         href: '/welfare',
-        chips: ['PostGIS', 'फ़नल', 'राजपत्र अंतर'],
+        chips: ['TopoJSON', 'फ़नल', 'राजपत्र अंतर'],
       },
     ],
   },
@@ -224,7 +224,7 @@ const hi: ShowcaseCopy = {
       {
         kicker: 'तीन डेस्क, एक सत्य',
         title: 'नागरिक, CSC और कल्याण कमान',
-        body: 'होमपेज केवल रास्ता दिखाता है। हर डेस्क असली कार्यक्षेत्र है — परिवार के लिए बोलचाल प्रश्न और लोकल तिजोरी, संचालक के लिए ऑफ़लाइन कियोस्क, अधिकारी के लिए नक्शा और राजपत्र अंतर।',
+        body: 'होमपेज केवल रास्ता दिखाता है। हर डेस्क असली कार्यक्षेत्र है — परिवार के लिए बोलचाल प्रश्न और लोकल तिजोरी, संचालक के लिए इसी डिवाइस की कियोस्क कतार, अधिकारी के लिए नक्शा और राजपत्र अंतर।',
       },
       {
         kicker: 'डिज़ाइन से गोपनीयता',
@@ -260,8 +260,8 @@ const hi: ShowcaseCopy = {
       },
       {
         id: 'pwa',
-        label: 'ऑफ़लाइन PWA',
-        hover: 'प्रोडक्शन में सर्विस वर्कर। localhost पर नहीं — पुराना कैश न लड़े। कियोस्क कतार IndexedDB में।',
+        label: 'डिवाइस पर कियोस्क कतार',
+        hover: 'IndexedDB CSC डोज़ियर कतार रख सकता है। सर्विस वर्कर पिछली सफल प्रकाशित-योजना प्राप्ति का स्नैपशॉट रख सकता है — पूरा ऑफ़लाइन ऐप नहीं।',
       },
     ],
   },
@@ -272,7 +272,7 @@ const hi: ShowcaseCopy = {
     statutory: 'वैधानिक संरेखण',
     statutoryItems: ['DPDPA 2023', 'आधार अधिनियम धारा 29', 'आईटी अधिनियम 2000'],
     engine: 'अभी क्या चल रहा है',
-    engineItems: ['नियतात्मक AST (क्लाइंट)', 'FastAPI + PostgreSQL', 'IndexedDB कियोस्क कतार', 'PWA (प्रोडक्शन)'],
+    engineItems: ['नियतात्मक AST (क्लाइंट)', 'FastAPI + PostgreSQL', 'IndexedDB कियोस्क कतार'],
     open: 'ओपन सिविक संरेखण',
     openBody: 'Ingestion आधिकारिक सरकारी HTML, PDF, CSV पर। data.gov.in संदर्भ पारिस्थितिकी है — साझेदारी बैज नहीं।',
   },

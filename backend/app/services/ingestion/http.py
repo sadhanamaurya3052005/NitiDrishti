@@ -80,6 +80,8 @@ def _download_once(url: str) -> RawPayload:
 
     content = b"".join(chunks)
     mime = (response.headers.get("Content-Type") or "application/octet-stream").split(";")[0].strip()
+    if not _mime_allowed(mime):
+        raise ValidationError(f"Unsupported content type: {mime or 'missing'}")
     headers = {k.lower(): v for k, v in response.headers.items()}
     return RawPayload(
         url=url,
@@ -91,3 +93,22 @@ def _download_once(url: str) -> RawPayload:
         content_hash=sha256_bytes(content),
         headers=headers,
     )
+
+
+_ALLOWED_MIME_PREFIXES = (
+    "text/",
+    "application/json",
+    "application/pdf",
+    "application/xml",
+    "application/xhtml",
+    "application/vnd.",
+    "application/octet-stream",
+    "application/javascript",
+)
+
+
+def _mime_allowed(mime: str) -> bool:
+    lowered = mime.lower().strip()
+    if not lowered:
+        return True
+    return any(lowered.startswith(prefix) for prefix in _ALLOWED_MIME_PREFIXES)

@@ -42,6 +42,7 @@ class EligibilityProfile:
     gender: str | None = None
     category: str | None = None
     occupation: str | None = None
+    state_id: str | None = None
 
 
 @dataclass
@@ -118,6 +119,19 @@ def evaluate_scheme_rules(scheme_id: str, rules: list[RuleLike], profile: Eligib
     elif unknowns:
         status = "PARTIAL_INFO"
     return SchemeEvaluation(scheme_id=scheme_id, status=status, score=score, rules=evaluated)
+
+
+def refold_evaluation(scheme_id: str, rules: list[EvaluatedRule]) -> SchemeEvaluation:
+    fails = sum(1 for item in rules if item.verdict == "fail")
+    unknowns = sum(1 for item in rules if item.verdict == "unknown")
+    passes = sum(1 for item in rules if item.verdict == "pass")
+    score = round((passes / max(1, len(rules))) * 100)
+    status: SchemeStatus = "ELIGIBLE"
+    if fails:
+        status = "INELIGIBLE"
+    elif unknowns:
+        status = "PARTIAL_INFO"
+    return SchemeEvaluation(scheme_id=scheme_id, status=status, score=score, rules=rules)
 
 
 def evaluate_rule(rule: RuleLike, profile: EligibilityProfile) -> EvaluatedRule:

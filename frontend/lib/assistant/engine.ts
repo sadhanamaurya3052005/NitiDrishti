@@ -17,19 +17,19 @@ const FAQ_FACTS: Record<
     },
     {
       keys: ['eligibility', 'ast', 'rule', 'engine', 'qualify'],
-      text: 'Eligibility is decided by a deterministic AST engine (AND / OR, age, income, land, category) — not a language model. Every fail shows the exact shortfall. Open a workspace and use Check eligibility on a scheme card.',
+      text: 'Eligibility is decided by a deterministic AST engine (AND / OR, age, income, land, category) — not a language model. Every fail shows the exact shortfall. A pass is an assessment on declared facts, not a government sanction.',
     },
     {
       keys: ['aadhaar', 'privacy', 'dpdp', 'pii', 'guest'],
-      text: 'Guest mode writes zero server rows. Raw national ID digits are never stored. Document OCR stays in browser memory. A profile is kept only after explicit DPDP consent. Right to forget is DELETE /api/v1/profile/purge.',
+      text: 'Guest mode writes zero server rows. Raw national ID digits are never stored. Document files stay in this browser; OCR is not live. A profile is kept only after explicit DPDP consent. Right to forget is DELETE /api/v1/auth/account.',
     },
     {
       keys: ['offline', 'pwa', 'internet', 'network'],
-      text: 'The PWA caches the shell and rule catalog. When the network drops, the offline pill turns amber and eligibility still runs on this device.',
+      text: 'CSC can keep a dossier queue in IndexedDB on this device. When the catalog service worker is registered, the last successful published-scheme fetch may be readable offline. Eligibility still needs the API. Ingest and identity are not cached.',
     },
     {
       keys: ['workspace', 'desk', 'citizen', 'csc', 'nyay', 'welfare', 'analytics', 'kiosk'],
-      text: 'Five desks share one catalog: Citizen cockpit, CSC kiosk, Nyay-Mitra gazette intelligence, Welfare command, and PostGIS analytics. Use the cards on the homepage to open them.',
+      text: 'Five desks share one catalog: Citizen cockpit, CSC kiosk, Nyay-Mitra gazette intelligence, Welfare command, and district analytics (TopoJSON map). Use the cards on the homepage to open them.',
     },
     {
       keys: ['dossier', 'pdf', 'print'],
@@ -37,7 +37,7 @@ const FAQ_FACTS: Record<
     },
     {
       keys: ['data', 'api', 'source', 'ingest'],
-      text: 'Scheme facts come from our own connectors on official government HTML, JS portals, PDFs, scans and CSV. No paid third-party scheme API. Restricted platforms only when the law requires an official assertion.',
+      text: 'Scheme facts come from our own connectors on official government HTML, JS portals, text PDFs and CSV. Scanned gazettes use local Tesseract when installed. No paid third-party scheme API.',
     },
   ],
   hi: [
@@ -47,19 +47,19 @@ const FAQ_FACTS: Record<
     },
     {
       keys: ['eligibility', 'पात्र', 'नियम', 'engine', 'ast'],
-      text: 'पात्रता AST नियम इंजन तय करता है (आयु, आय, भूमि, श्रेणी) — भाषा मॉडल नहीं। हर फेल पर सटीक कमी दिखती है। वर्कस्पेस खोलकर योजना कार्ड पर पात्रता जाँचें।',
+      text: 'पात्रता AST नियम इंजन तय करता है (आयु, आय, भूमि, श्रेणी) — भाषा मॉडल नहीं। हर फेल पर सटीक कमी दिखती है। पास घोषित तथ्यों पर मूल्यांकन है, सरकारी स्वीकृति नहीं।',
     },
     {
       keys: ['aadhaar', 'आधार', 'गोपनीयता', 'dpdp', 'guest', 'अतिथि'],
-      text: 'अतिथि मोड सर्वर पर शून्य पंक्ति लिखता है। कच्चे पहचान अंक कभी संग्रहीत नहीं। OCR ब्राउज़र मेमोरी में रहता है। प्रोफ़ाइल केवल स्पष्ट DPDP सहमति पर।',
+      text: 'अतिथि मोड सर्वर पर शून्य पंक्ति लिखता है। कच्चे पहचान अंक कभी संग्रहीत नहीं। दस्तावेज़ फ़ाइलें इसी ब्राउज़र में रहती हैं; OCR लाइव नहीं। प्रोफ़ाइल केवल स्पष्ट DPDP सहमति पर। मिटाने का मार्ग DELETE /api/v1/auth/account है।',
     },
     {
       keys: ['offline', 'ऑफलाइन', 'इंटरनेट', 'pwa'],
-      text: 'PWA शेल और नियम कैटलॉग कैश करता है। नेटवर्क गिरने पर ऑफ़लाइन पिल एम्बर होता है और पात्रता इसी डिवाइस पर चलती है।',
+      text: 'CSC इस डिवाइस पर IndexedDB में डोज़ियर कतार रख सकता है। सर्विस वर्कर पंजीकृत हो तो पिछली सफल प्रकाशित-योजना प्राप्ति ऑफ़लाइन पढ़ी जा सकती है। पात्रता के लिए API चाहिए। ingest और पहचान कैश नहीं होते।',
     },
     {
       keys: ['workspace', 'डेस्क', 'नागरिक', 'csc', 'न्याय', 'analytics'],
-      text: 'पाँच डेस्क: नागरिक कॉकपिट, CSC कियोस्क, न्याय-मित्र, कल्याण कमांड, PostGIS एनालिटिक्स। होमपेज के कार्ड से खोलें।',
+      text: 'पाँच डेस्क: नागरिक कॉकपिट, CSC कियोस्क, न्याय-मित्र, कल्याण कमांड, ज़िला एनालिटिक्स (TopoJSON नक्शा)। होमपेज के कार्ड से खोलें।',
     },
     {
       keys: ['dossier', 'pdf', 'डोज़ियर', 'प्रिंट'],
@@ -67,7 +67,7 @@ const FAQ_FACTS: Record<
     },
     {
       keys: ['data', 'api', 'स्रोत', 'डेटा'],
-      text: 'योजना तथ्य हमारी कनेक्टर पाइपलाइन आधिकारिक सरकारी HTML, पोर्टल, PDF और CSV से लाती है। पेड थर्ड-पार्टी स्कीम API नहीं।',
+      text: 'योजना तथ्य हमारी कनेक्टर पाइपलाइन आधिकारिक सरकारी HTML, पोर्टल, पाठ PDF और CSV से लाती है। स्कैन OCR लाइव नहीं। पेड थर्ड-पार्टी स्कीम API नहीं।',
     },
   ],
 };

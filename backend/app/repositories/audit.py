@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from uuid import UUID
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models.actions import AuditLog
@@ -34,3 +35,9 @@ class AuditRepository(BaseRepository[AuditLog]):
         )
         self.session.add(row)
         return row
+
+    def list_recent(self, *, limit: int = 40, action: str | None = None) -> list[AuditLog]:
+        stmt = select(AuditLog).order_by(AuditLog.created_at.desc()).limit(min(max(limit, 1), 100))
+        if action:
+            stmt = stmt.where(AuditLog.action == action)
+        return list(self.session.scalars(stmt).all())

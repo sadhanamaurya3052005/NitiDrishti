@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import date
 from uuid import UUID
 
 from sqlalchemy.orm import Session
@@ -57,11 +58,26 @@ class PolicyCatalogService:
             return [_change(item) for item in stored]
         return diff_clauses(self.clauses.for_version(previous.id), self.clauses.for_version(newest.id))
 
-    def compare(self, policy_id: str, *, from_version: str | None, to_version: str | None) -> dict:
+    def compare(
+        self,
+        policy_id: str,
+        *,
+        from_version: str | None,
+        to_version: str | None,
+        as_of: date | None = None,
+    ) -> dict:
         policy = self._require(policy_id)
         versions = self.versions.for_policy(policy.id)
         if not versions:
             raise NotFoundError("This policy has no ingested versions yet")
+        if as_of is not None and not from_version and not to_version:
+            left = pick_in_force(versions, as_of) or versions[-1]
+            right = self._current(policy) or versions[0]
+            payload = self._pair(policy, left, right)
+            payload["asOf"] = as_of.isoformat()
+            if left.id == right.id:
+                payload["note"] = "This date is covered by the same ingested version as the current gazette."
+            return payload
         if len(versions) < 2:
             current = versions[0]
             return {
@@ -69,10 +85,16 @@ class PolicyCatalogService:
                 "from_version": None,
                 "to_version": _version(current, is_current=current.id == policy.current_version_id),
                 "changes": [],
+                "asOf": None if as_of is None else as_of.isoformat(),
                 "note": "Only one ingested version; no stored legal diff",
             }
         left = self._pick_version(policy.id, versions, from_version, default_index=min(1, len(versions) - 1))
         right = self._pick_version(policy.id, versions, to_version, default_index=0)
+        payload = self._pair(policy, left, right)
+        payload["asOf"] = None if as_of is None else as_of.isoformat()
+        return payload
+
+    def _pair(self, policy: Policy, left: PolicyVersion, right: PolicyVersion) -> dict:
         if left.id == right.id:
             return {
                 "policy_id": str(policy.id),
@@ -154,6 +176,23 @@ def _version(row: PolicyVersion, *, is_current: bool) -> dict:
         "effective_to": None if row.effective_to is None else row.effective_to.isoformat(),
         "is_current": is_current,
     }
+
+
+def effective_on(version: PolicyVersion, as_of: date) -> bool:
+    start = version.effective_from
+    end = version.effective_to
+    if start is not None and as_of < start:
+        return False
+    if end is not None and as_of > end:
+        return False
+    return True
+
+
+def pick_in_force(versions: list[PolicyVersion], as_of: date) -> PolicyVersion | None:
+    matching = [item for item in versions if effective_on(item, as_of)]
+    if not matching:
+        return None
+    return max(matching, key=lambda item: item.version_number)
 
 
 def _clause(row: PolicyClause) -> dict:

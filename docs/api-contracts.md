@@ -51,3 +51,13 @@ Asynchronous: crawl, OCR, extraction, dedup, versioning, alerts, embeddings.
 | WELFARE_OFFICER | | | yes | yes | yes |
 | POLICY_ANALYST | | | yes | | yes |
 | ADMIN | yes | yes | yes | yes | yes |
+
+## Disaster DSS (`FEATURE_DISASTER_MODULE`)
+
+`GET /api/v1/disaster/summary` is a catalog read. Guests may call it. When the flag is off the
+envelope is successful with `enabled: false`, `published_count: 0`, empty `schemes` — no flood or
+beneficiary figures. When on, rows are published `category=disaster` schemes from Postgres plus
+bundled district names (TopoJSON/LGD join). `ndma_live` and `postgis` stay false.
+
+`POST /api/v1/disaster/focus` is officer / analyst / admin only (guest 401). Body is
+`{ "state_iso", "district_name" }` from the bundled list. It does not write PII.

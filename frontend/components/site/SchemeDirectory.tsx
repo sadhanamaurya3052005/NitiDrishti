@@ -3,13 +3,15 @@
 import { Bookmark, BookmarkCheck, CircleHelp, ListChecks } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
+import { CatalogCacheStrip } from '@/components/app/CatalogCacheStrip';
 import { EligibilityInspector } from '@/components/site/EligibilityInspector';
+import { GazetteEvidence } from '@/components/site/GazetteEvidence';
 import { useExperience } from '@/components/providers/ExperienceProvider';
 import { useLocale } from '@/components/providers/LocaleProvider';
 import { Reveal } from '@/components/motion/Reveal';
+import { useServerEvaluations } from '@/hooks/useServerEvaluations';
 import { getSchemes } from '@/lib/api';
 import { cn } from '@/lib/cn';
-import { evaluateScheme, type SchemeEvaluation } from '@/lib/schemes/evaluate';
 import type { CasteCategory, SchemeCategory, SchemeRecord } from '@/types';
 
 const STATES = [
@@ -28,14 +30,16 @@ const STATES = [
 ] as const;
 
 export function SchemeDirectory({ embedded = false }: { embedded?: boolean }) {
-  const { home, locale } = useLocale();
+  const { home, locale, desk } = useLocale();
   const { profile, patchProfile, savedSchemeIds, toggleSaveScheme, enqueueDossier, roleView } = useExperience();
   const [category, setCategory] = useState<'all' | SchemeCategory>('all');
   const [query, setQuery] = useState('');
   const [state, setState] = useState('all');
   const [schemes, setSchemes] = useState<SchemeRecord[]>([]);
   const [fromApi, setFromApi] = useState(false);
-  const [active, setActive] = useState<{ scheme: SchemeRecord; evaluation: SchemeEvaluation } | null>(null);
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const schemeIds = useMemo(() => schemes.map((item) => item.id), [schemes]);
+  const { byId, status: engineStatus } = useServerEvaluations(schemeIds, profile);
 
   useEffect(() => {
     const input = document.getElementById('scheme-search');
@@ -56,18 +60,12 @@ export function SchemeDirectory({ embedded = false }: { embedded?: boolean }) {
     };
   }, [category, query]);
 
-  const visible = useMemo(() => {
-    return schemes.filter((scheme) => {
-      const evaluation = evaluateScheme(scheme, profile);
-      if (profile.income > 0 && evaluation.status === 'INELIGIBLE' && category === 'all' && !query) {
-        return true;
-      }
-      return true;
-    });
-  }, [category, profile, query, schemes]);
+  const visible = schemes;
+  const activeScheme = schemes.find((item) => item.id === activeId) ?? null;
+  const activeEvaluation = activeScheme ? byId[activeScheme.id] ?? null : null;
 
   const openInspector = (scheme: SchemeRecord) => {
-    setActive({ scheme, evaluation: evaluateScheme(scheme, profile) });
+    setActiveId(scheme.id);
   };
 
   return (
@@ -83,6 +81,9 @@ export function SchemeDirectory({ embedded = false }: { embedded?: boolean }) {
             {roleView === 'csc' ? ' · CSC desk' : ''}
           </p>
         </Reveal>
+        <div className="mt-6">
+          <CatalogCacheStrip />
+        </div>
 
         <div className="mt-8 flex flex-wrap gap-2">
           {home.schemes.filters.map((filter) => (
@@ -166,14 +167,17 @@ export function SchemeDirectory({ embedded = false }: { embedded?: boolean }) {
           </label>
         </div>
 
-        {visible.length === 0 ? (
+          {engineStatus === 'error' ? (
+            <p className="mt-6 text-sm text-ink-muted">{desk.eligibility.engineDown}</p>
+          ) : null}
+          {visible.length === 0 ? (
           <p className="mt-10 text-sm text-ink-muted">
             {query.trim() ? home.schemes.empty : home.schemes.emptyCatalog}
           </p>
         ) : (
           <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {visible.map((scheme) => {
-              const evaluation = evaluateScheme(scheme, profile);
+              const evaluation = byId[scheme.id];
               const name = locale === 'hi' ? scheme.nameHi : scheme.name;
               const summary = locale === 'hi' ? scheme.summaryHi : scheme.summary;
               const benefit = locale === 'hi' ? scheme.benefitHi : scheme.benefit;
@@ -212,8 +216,9 @@ export function SchemeDirectory({ embedded = false }: { embedded?: boolean }) {
                     })}
                   </ul>
                   <p className="mt-3 text-[11px] font-medium text-ink-muted">
-                    {evaluation.status} · {evaluation.score}%
+                    {evaluation ? `${evaluation.status} · ${evaluation.score}%` : '—'}
                   </p>
+                  <GazetteEvidence evaluation={evaluation} fallbackUrl={scheme.sourceUrl} compact className="mt-1" />
                   <div className="mt-4 flex flex-wrap gap-2">
                     <button type="button" onClick={() => openInspector(scheme)} className="nd-cta-saffron !px-3 !py-2 text-xs">
                       <ListChecks className="h-3.5 w-3.5" />
@@ -247,10 +252,10 @@ export function SchemeDirectory({ embedded = false }: { embedded?: boolean }) {
       </div>
 
       <EligibilityInspector
-        open={Boolean(active)}
-        onClose={() => setActive(null)}
-        schemeName={active ? (locale === 'hi' ? active.scheme.nameHi : active.scheme.name) : ''}
-        evaluation={active?.evaluation ?? null}
+        open={Boolean(activeScheme)}
+        onClose={() => setActiveId(null)}
+        schemeName={activeScheme ? (locale === 'hi' ? activeScheme.nameHi : activeScheme.name) : ''}
+        evaluation={activeEvaluation}
       />
     </section>
   );

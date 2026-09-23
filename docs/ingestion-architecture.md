@@ -3,6 +3,34 @@
 Official government pages are fetched by **our** connectors. The frontend never talks to a ministry URL.
 
 ```
+OFFICIAL GOVERNMENT SOURCES
+        ↓  whitelist + robots.txt (fail-closed)
+SOURCE REGISTRY (`sources`)
+        ↓  html | pdf | tabular | json | optional Playwright
+INGESTION / CRAWLING
+        ↓
+BRONZE  storage/raw/{source_id}/{date}/{sha256}.*  + `source_documents`
+        ↓  same SHA → skip (no overwrite)
+VALIDATION + QUALITY FLAGS
+        ↓
+PARSE / OCR (pypdf; Tesseract only if FEATURE_AI_EXTRACTION and text is thin)
+        ↓
+NORMALIZE (₹ / lakh / dates — original wording kept on rule.detail)
+        ↓
+SILVER  extracted NormalizedScheme (needs_review until HITL)
+        ↓  deterministic extractors; LLM does not vote
+HUMAN VERIFICATION  GET/POST /api/v1/review
+        ↓
+GOLD  published `scheme_versions` + `eligibility_rules.ast_json`
+        ↓  old versions never deleted
+POSTGRESQL → FASTAPI → Citizen / CSC / Nyay-Mitra / Welfare / Admin
+```
+
+Live counts: `GET /api/v1/pipeline`. Orchestrator is **APScheduler** (`INGEST_INTERVAL_HOURS`). Airflow is **not** implemented.
+
+Original flow (unchanged):
+
+```
 Official URL
     → whitelist (.gov.in / .nic.in / listed extras)
     → robots.txt (fail-closed if unreadable or Disallow)
@@ -23,7 +51,7 @@ Writes go `CLI/script → SchemeIngestionService → repositories → PostgreSQL
 |---|---|---|
 | `html` | `app/services/ingestion/html.py` | requests + BeautifulSoup; reads `__NEXT_DATA__` when present |
 | `dynamic` | `app/services/ingestion/dynamic.py` | Optional Playwright. Not required. No login, no CAPTCHA |
-| `pdf` | `app/services/ingestion/pdf.py` | Text PDFs via pypdf. Scanned/OCR is later |
+| `pdf` | `app/services/ingestion/pdf.py` | Text PDFs via pypdf. Thin scans use local Tesseract when `FEATURE_AI_EXTRACTION` is on |
 | `tabular` | `app/services/ingestion/tabular.py` | CSV and Excel |
 | `json` | `app/services/ingestion/json_source.py` | Departmental JSON lists or objects |
 

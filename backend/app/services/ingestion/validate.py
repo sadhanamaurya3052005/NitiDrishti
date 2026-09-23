@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from app.core.exceptions import ValidationError
 from app.models.enums import RULE_KINDS, SCHEME_CATEGORIES
+from app.services.eligibility.ast_schema import validate_ast
 from app.services.ingestion.payload import NormalizedScheme
 
 
@@ -21,6 +22,9 @@ def validate_scheme(scheme: NormalizedScheme) -> None:
             raise ValidationError("age_min must be <= age_max")
         if rule.income_limit is not None and rule.income_limit < 0:
             raise ValidationError("income_limit must be >= 0")
+        ast_errors = validate_ast(rule.ast_json)
+        if ast_errors:
+            raise ValidationError(f"Invalid AST on {rule.rule_key}: {ast_errors[0]}")
     if _looks_like_identity_digits(scheme.summary) or any(
         _looks_like_identity_digits(doc.label) for doc in scheme.documents
     ):

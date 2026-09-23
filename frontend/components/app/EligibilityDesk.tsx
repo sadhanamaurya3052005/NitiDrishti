@@ -1,14 +1,14 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import { EligibilityInspector } from '@/components/site/EligibilityInspector';
+import { GazetteEvidence } from '@/components/site/GazetteEvidence';
 import { MetricBadge } from '@/components/ui/MetricBadge';
 import { useExperience } from '@/components/providers/ExperienceProvider';
 import { useLocale } from '@/components/providers/LocaleProvider';
 import { useSchemes } from '@/hooks/useSchemes';
-import { evaluateEligibility } from '@/lib/api';
-import { evaluateScheme, type SchemeEvaluation } from '@/lib/schemes/evaluate';
+import { useServerEvaluations } from '@/hooks/useServerEvaluations';
 import type { CasteCategory } from '@/types';
 
 export function EligibilityDesk() {
@@ -16,50 +16,18 @@ export function EligibilityDesk() {
   const { profile, patchProfile } = useExperience();
   const { schemes, loading, error } = useSchemes();
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [serverEvals, setServerEvals] = useState<Record<string, SchemeEvaluation> | null>(null);
-
-  useEffect(() => {
-    if (!schemes.length) {
-      setServerEvals(null);
-      return;
-    }
-    let cancelled = false;
-    void evaluateEligibility({
-      scheme_ids: schemes.map((item) => item.id),
-      profile: {
-        age: profile.age,
-        income: profile.income,
-        land_hectares: profile.landHectares,
-        gender: profile.gender,
-        category: profile.category,
-        occupation: profile.occupation,
-      },
-    })
-      .then((payload) => {
-        if (cancelled) return;
-        const next: Record<string, SchemeEvaluation> = {};
-        for (const item of payload.evaluations) {
-          next[item.evaluation.schemeId] = item.evaluation;
-        }
-        setServerEvals(next);
-      })
-      .catch(() => {
-        if (!cancelled) setServerEvals(null);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [profile, schemes]);
+  const schemeIds = useMemo(() => schemes.map((item) => item.id), [schemes]);
+  const { byId, status: engineStatus } = useServerEvaluations(schemeIds, profile);
 
   const ranked = useMemo(
     () =>
       schemes
         .map((scheme) => ({
           scheme,
-          evaluation: serverEvals?.[scheme.id] ?? evaluateScheme(scheme, profile),
+          evaluation: byId[scheme.id] ?? null,
         }))
-        .sort((a, b) => b.evaluation.score - a.evaluation.score),
-    [profile, schemes, serverEvals],
+        .sort((a, b) => (b.evaluation?.score ?? -1) - (a.evaluation?.score ?? -1)),
+    [byId, schemes],
   );
 
   const active = ranked.find((item) => item.scheme.id === activeId);
@@ -72,7 +40,7 @@ export function EligibilityDesk() {
           <h1 className="mt-1 text-headline">{desk.eligibility.title}</h1>
           <p className="mt-2 max-w-2xl text-sm text-ink-soft">{desk.eligibility.lede}</p>
         </div>
-        <MetricBadge label="AST" note="< 50ms" />
+        <MetricBadge label="AST" />
       </header>
 
       <div className="nd-card mt-8 grid gap-4 p-5 sm:grid-cols-4">
@@ -126,6 +94,9 @@ export function EligibilityDesk() {
         </label>
       </div>
 
+      {engineStatus === 'error' ? (
+        <p className="nd-card mt-6 px-5 py-4 text-center text-sm text-ink-muted">{desk.eligibility.engineDown}</p>
+      ) : null}
       {error ? (
         <p className="nd-card mt-6 px-5 py-10 text-center text-sm text-ink-muted">
           {locale === 'hi' ? 'सूची अभी उपलब्ध नहीं।' : 'Catalog is unavailable right now.'}
@@ -148,19 +119,26 @@ export function EligibilityDesk() {
               <span>
                 <span className="block font-semibold">{locale === 'hi' ? scheme.nameHi : scheme.name}</span>
                 <span className="mt-1 block text-xs text-ink-muted">
-                  {evaluation.rules.filter((rule) => rule.verdict === 'pass').length}/{evaluation.rules.length} pass
+                  {evaluation
+                    ? `${evaluation.rules.filter((rule) => rule.verdict === 'pass').length}/${evaluation.rules.length} pass`
+                    : engineStatus === 'loading'
+                      ? '…'
+                      : '—'}
                 </span>
+                <GazetteEvidence evaluation={evaluation} fallbackUrl={scheme.sourceUrl} compact className="mt-1" />
               </span>
               <span
                 className={
-                  evaluation.status === 'ELIGIBLE'
+                  evaluation?.status === 'ELIGIBLE'
                     ? 'text-sm font-semibold text-mint-deep'
-                    : evaluation.status === 'PARTIAL_INFO'
+                    : evaluation?.status === 'PARTIAL_INFO'
                       ? 'text-sm font-semibold text-amber-deep'
-                      : 'text-sm font-semibold text-saffron-deep'
+                      : evaluation?.status === 'INELIGIBLE'
+                        ? 'text-sm font-semibold text-saffron-deep'
+                        : 'text-sm font-semibold text-ink-muted'
                 }
               >
-                {evaluation.status}
+                {evaluation?.status ?? '—'}
               </span>
             </button>
           </li>

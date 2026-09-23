@@ -4,6 +4,7 @@
 
 # ── Web framework + database + tooling ───────────────────────
 fastapi>=0.115
+python-multipart>=0.0.18
 uvicorn[standard]>=0.34
 pydantic>=2.10
 pydantic-settings>=2.7
@@ -37,5 +38,5 @@ openpyxl>=3.1
 # python-dateutil, rapidfuzz
 apscheduler>=3.10
 # weasyprint (dossier PDF)
-# pymupdf, pytesseract, pillow (scanned OCR)
+# pymupdf, pytesseract, pillow  (scanned gazette OCR — optional; fail-closed if missing)
 # sentence-transformers, onnxruntime, pgvector (semantic search)

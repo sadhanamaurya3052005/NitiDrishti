@@ -1,13 +1,13 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 
+import { GazetteEvidence } from '@/components/site/GazetteEvidence';
 import { MetricBadge } from '@/components/ui/MetricBadge';
 import { useExperience } from '@/components/providers/ExperienceProvider';
 import { useLocale } from '@/components/providers/LocaleProvider';
 import { useSchemes } from '@/hooks/useSchemes';
-import { evaluateScheme } from '@/lib/schemes/evaluate';
-import { unlockHints } from '@/lib/schemes/sensitivity';
+import { useServerWhatIf } from '@/hooks/useServerEvaluations';
 
 export function WhatIfDesk() {
   const { desk, locale, home } = useLocale();
@@ -15,14 +15,7 @@ export function WhatIfDesk() {
   const { schemes, loading, error } = useSchemes();
   const [schemeId, setSchemeId] = useState('');
   const scheme = schemes.find((item) => item.id === schemeId) ?? schemes[0];
-  const evaluation = useMemo(
-    () => (scheme ? evaluateScheme(scheme, profile) : null),
-    [profile, scheme],
-  );
-  const hints = useMemo(
-    () => (scheme ? unlockHints(scheme, profile) : []),
-    [profile, scheme],
-  );
+  const { evaluation, hints, status: engineStatus } = useServerWhatIf(scheme?.id ?? '', profile);
 
   useEffect(() => {
     if (!schemeId && schemes[0]) setSchemeId(schemes[0].id);
@@ -39,6 +32,9 @@ export function WhatIfDesk() {
         <MetricBadge label="Sensitivity" />
       </header>
 
+      {engineStatus === 'error' ? (
+        <p className="nd-card mt-8 px-5 py-4 text-center text-sm text-ink-muted">{desk.eligibility.engineDown}</p>
+      ) : null}
       {error ? (
         <p className="nd-card mt-8 px-5 py-10 text-center text-sm text-ink-muted">
           {locale === 'hi' ? 'सूची अभी उपलब्ध नहीं।' : 'Catalog is unavailable right now.'}
@@ -82,6 +78,7 @@ export function WhatIfDesk() {
       {evaluation ? (
         <div className="nd-card mt-6 p-5">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-ink-muted">{desk.whatif.current}</p>
+          <GazetteEvidence evaluation={evaluation} fallbackUrl={scheme?.sourceUrl} className="mt-2" />
           <ul className="mt-3 space-y-2 font-mono text-[12px]">
             {evaluation.rules.map((rule) => (
               <li key={rule.id} className={rule.verdict === 'pass' ? 'text-mint-deep' : rule.verdict === 'fail' ? 'text-saffron-deep' : 'text-ink-muted'}>

@@ -4,11 +4,14 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 
 import {
   createDossier,
+  deleteAccount,
   fetchMe,
   loginAccount,
   logoutAccount,
   refreshAccount,
   registerAccount,
+  updateProfile,
+  type AuthUser,
   type TokenBundle,
 } from '@/lib/api';
 import {
@@ -58,6 +61,10 @@ function persistSession(next: LocalSession) {
   window.localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(next));
 }
 
+function consentFromUser(user: AuthUser): boolean {
+  return Boolean(user.profile?.consent_retention);
+}
+
 function sessionFromBundle(mode: SessionMode, bundle: TokenBundle): LocalSession {
   return {
     mode,
@@ -84,6 +91,10 @@ interface ExperienceContextValue {
     displayName?: string;
   }) => Promise<void>;
   signOut: () => void;
+  purgeAccount: () => Promise<void>;
+  consentRetention: boolean;
+  setConsentRetention: (value: boolean) => Promise<void>;
+  consentBusy: boolean;
   profile: CitizenProfile;
   patchProfile: (patch: Partial<CitizenProfile>) => void;
   setDocument: (id: string, present: boolean) => void;
@@ -99,6 +110,8 @@ export function ExperienceProvider({ children }: { children: React.ReactNode }) 
   const [roleView, setRoleViewState] = useState<RoleView>('citizen');
   const [session, setSession] = useState<LocalSession | null>(null);
   const [profile, setProfile] = useState<CitizenProfile>(DEFAULT_PROFILE);
+  const [consentRetention, setConsentRetentionState] = useState(false);
+  const [consentBusy, setConsentBusy] = useState(false);
   const [savedSchemeIds, setSavedSchemeIds] = useState<string[]>([]);
   const [dossierQueue, setDossierQueue] = useState<DossierJob[]>([]);
 
@@ -124,6 +137,7 @@ export function ExperienceProvider({ children }: { children: React.ReactNode }) 
         };
         setSession(next);
         persistSession(next);
+        setConsentRetentionState(consentFromUser(me));
         const preferred = preferredServerRole(me.roles);
         if (preferred) window.localStorage.setItem(PREVIEW_ROLE_STORAGE_KEY, preferred);
       } catch {
@@ -134,9 +148,11 @@ export function ExperienceProvider({ children }: { children: React.ReactNode }) 
           const next = sessionFromBundle(stored.mode, bundle);
           setSession(next);
           persistSession(next);
+          setConsentRetentionState(consentFromUser(bundle.user));
         } catch {
           if (cancelled) return;
           setSession(null);
+          setConsentRetentionState(false);
           window.localStorage.removeItem(SESSION_STORAGE_KEY);
         }
       }
@@ -161,6 +177,7 @@ export function ExperienceProvider({ children }: { children: React.ReactNode }) 
     const view: RoleView = mode === 'csc' ? 'csc' : 'citizen';
     setSession(next);
     setRoleViewState(view);
+    setConsentRetentionState(false);
     persistSession(next);
     window.localStorage.setItem(ROLE_VIEW_STORAGE_KEY, view);
     window.localStorage.setItem(PREVIEW_ROLE_STORAGE_KEY, previewRoleForSession(mode));
@@ -191,6 +208,7 @@ export function ExperienceProvider({ children }: { children: React.ReactNode }) 
       const storedRole = preferredServerRole(bundle.user.roles) ?? previewRoleForSession(input.mode);
       setSession(next);
       setRoleViewState(view);
+      setConsentRetentionState(consentFromUser(bundle.user));
       persistSession(next);
       window.localStorage.setItem(ROLE_VIEW_STORAGE_KEY, view);
       window.localStorage.setItem(PREVIEW_ROLE_STORAGE_KEY, storedRole);
@@ -202,10 +220,46 @@ export function ExperienceProvider({ children }: { children: React.ReactNode }) 
   const signOut = useCallback(() => {
     const token = session?.accessToken;
     setSession(null);
+    setConsentRetentionState(false);
     window.localStorage.removeItem(SESSION_STORAGE_KEY);
     if (token) void logoutAccount(token).catch(() => undefined);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [session]);
+
+  const purgeAccount = useCallback(async () => {
+    if (!session?.accessToken) return;
+    await deleteAccount();
+    setSession(null);
+    setConsentRetentionState(false);
+    window.localStorage.removeItem(SESSION_STORAGE_KEY);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [session]);
+
+  const setConsentRetention = useCallback(
+    async (value: boolean) => {
+      if (!session?.accessToken) return;
+      setConsentBusy(true);
+      try {
+        const user = await updateProfile(
+          value
+            ? {
+                consent_retention: true,
+                age: profile.age,
+                income: profile.income,
+                land_hectares: profile.landHectares,
+                gender: profile.gender,
+                category: profile.category,
+                occupation: profile.occupation,
+              }
+            : { consent_retention: false },
+        );
+        setConsentRetentionState(consentFromUser(user));
+      } finally {
+        setConsentBusy(false);
+      }
+    },
+    [profile, session?.accessToken],
+  );
 
   const patchProfile = useCallback((patch: Partial<CitizenProfile>) => {
     setProfile((current) => ({ ...current, ...patch }));
@@ -256,6 +310,10 @@ export function ExperienceProvider({ children }: { children: React.ReactNode }) 
       signIn,
       signInAccount,
       signOut,
+      purgeAccount,
+      consentRetention,
+      setConsentRetention,
+      consentBusy,
       profile,
       patchProfile,
       setDocument,
@@ -271,6 +329,10 @@ export function ExperienceProvider({ children }: { children: React.ReactNode }) 
       signIn,
       signInAccount,
       signOut,
+      purgeAccount,
+      consentRetention,
+      setConsentRetention,
+      consentBusy,
       profile,
       patchProfile,
       setDocument,

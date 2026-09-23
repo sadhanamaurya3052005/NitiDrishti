@@ -12,10 +12,10 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.error_handlers import register_error_handlers
 from app.api.router import api_router
-from app.config import settings
+from app.config import get_settings, settings
 from app.core.database import check_connection
 from app.core.logging import configure_logging, get_logger
-from app.core.middleware import RequestIdMiddleware
+from app.core.middleware import RateLimitMiddleware, RequestIdMiddleware, SecurityHeadersMiddleware
 from app.services.ingestion.scheduler import start_background_scheduler, stop_background_scheduler
 
 configure_logging()
@@ -24,6 +24,7 @@ log = get_logger("nitidrishti")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    get_settings.cache_clear()
     db = check_connection()
     log.info(
         "startup",
@@ -36,7 +37,7 @@ async def lifespan(app: FastAPI):
     if not db["connected"]:
         log.warning(
             "database_unreachable",
-            hint="Start local PostgreSQL 16 + PostGIS, or set DATABASE_URL in .env",
+            hint="Start local PostgreSQL 18 (native), or set DATABASE_URL in .env",
         )
     app.state.ingest_scheduler = start_background_scheduler()
     yield
@@ -57,7 +58,9 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
+    app.add_middleware(RateLimitMiddleware)
     app.add_middleware(RequestIdMiddleware)
+    app.add_middleware(SecurityHeadersMiddleware)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origin_list,

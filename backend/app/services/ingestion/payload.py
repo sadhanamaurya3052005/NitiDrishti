@@ -34,6 +34,8 @@ class ParsedDocument:
     next_data: dict[str, Any] | None = None
     json_ld: list[dict[str, Any]] = field(default_factory=list)
     links: list[str] = field(default_factory=list)
+    ocr_confidence: float | None = None
+    ocr_engine: str | None = None
 
 
 @dataclass
@@ -83,6 +85,7 @@ class NormalizedScheme:
     rules: list[NormalizedRule] = field(default_factory=list)
     documents: list[NormalizedDocumentNeed] = field(default_factory=list)
     confidence: float = 0.0
+    quality_flags: list[str] = field(default_factory=list)
 
 
 @dataclass(frozen=True)

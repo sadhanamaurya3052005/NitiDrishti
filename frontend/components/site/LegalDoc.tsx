@@ -4,6 +4,7 @@ import Link from 'next/link';
 
 import { SiteFooter } from '@/components/site/SiteFooter';
 import { SiteHeader } from '@/components/site/SiteHeader';
+import { PrivacyStrip } from '@/components/app/PrivacyStrip';
 import { useLocale } from '@/components/providers/LocaleProvider';
 
 interface LegalDocProps {
@@ -18,7 +19,7 @@ const DOCS = {
       paragraphs: [
         'NitiDrishti is a civic welfare-intelligence product. This page describes how the public web app treats information — not a claim of government certification.',
         'Guest mode writes zero rows on the server. Eligibility sliders and document checks for guests stay in this browser. We do not display full identity numbers.',
-        'Signed-in accounts store only what the backend needs for that session. You can sign out to clear the device session. Statutory erasure follows the product’s profile-purge path once accounts are live.',
+        'Signed-in accounts store a declared profile only after the DPDP toggle on this page. Statutory erasure is DELETE /api/v1/auth/account (button below). Guest mode still writes zero rows.',
         'Scheme text comes from official government sources through our own pipeline. We do not sell personal data or use paid third-party beneficiary APIs.',
         'Questions: hello@nitidrishti.local (product inbox, not a 24×7 helpdesk).',
       ],
@@ -29,7 +30,7 @@ const DOCS = {
       paragraphs: [
         'NitiDrishti एक नागरिक कल्याण-इंटेलिजेंस उत्पाद है। यह पृष्ठ सार्वजनिक वेब ऐप की जानकारी-नीति बताता है — सरकारी प्रमाणीकरण का दावा नहीं।',
         'अतिथि मोड सर्वर पर शून्य पंक्ति लिखता है। पात्रता स्लाइडर और दस्तावेज़ जाँच इसी ब्राउज़र में रहती है। पूरे पहचान अंक नहीं दिखाए जाते।',
-        'साइन-इन खाते केवल सत्र के लिए आवश्यक पंक्तियाँ रखते हैं। साइन आउट डिवाइस सत्र साफ़ करता है। खाते लाइव होने पर प्रोफ़ाइल-पर्ज वैधानिक मिटान का मार्ग है।',
+        'साइन-इन खाते घोषित प्रोफ़ाइल केवल इस पृष्ठ के DPDP टॉगल के बाद रखते हैं। वैधानिक मिटान: DELETE /api/v1/auth/account (नीचे बटन)। अतिथि मोड अब भी शून्य पंक्ति लिखता है।',
         'योजना पाठ आधिकारिक सरकारी स्रोतों से हमारी पाइपलाइन द्वारा आता है। हम व्यक्तिगत डेटा नहीं बेचते और पेड लाभार्थी API नहीं इस्तेमाल करते।',
         'प्रश्न: hello@nitidrishti.local (उत्पाद इनबॉक्स, 24×7 हेल्पडेस्क नहीं)।',
       ],
@@ -78,6 +79,11 @@ export function LegalDoc({ kind }: LegalDocProps) {
               <p key={paragraph}>{paragraph}</p>
             ))}
           </div>
+          {kind === 'privacy' ? (
+            <div className="mt-8">
+              <PrivacyStrip />
+            </div>
+          ) : null}
           <p className="mt-10 text-sm">
             <Link href="/" className="font-semibold text-saffron-deep hover:underline">
               ← {locale === 'hi' ? 'NitiDrishti पर लौटें' : 'Back to NitiDrishti'}

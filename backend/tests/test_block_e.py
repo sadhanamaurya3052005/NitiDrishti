@@ -69,18 +69,23 @@ def test_analytics_summary_is_honest() -> None:
     for key in ("published_schemes", "jobs", "internships", "scholarships", "policies"):
         assert isinstance(data[key], int)
         assert data[key] >= 0
-    assert data["application_rows"] is False
+    assert isinstance(data["application_rows"], bool)
     assert data["pgvector_enabled"] is False
     assert isinstance(data["postgis_enabled"], bool)
-    assert data["map"]["available"] is data["postgis_enabled"]
+    assert data["map"]["available"] is True
     for stage in data["funnel"]:
-        assert stage["count"] is None
+        if data["application_rows"]:
+            assert isinstance(stage["count"], int)
+            assert stage["count"] >= 0
+        else:
+            assert stage["count"] is None
     csc = client.get("/api/v1/csc/summary")
     welfare = client.get("/api/v1/welfare/summary")
     assert csc.status_code == 200
     assert welfare.status_code == 200
     assert csc.json()["data"]["workspace"] == "csc"
-    assert welfare.json()["data"]["funnel"][0]["count"] is None
+    if not data["application_rows"]:
+        assert welfare.json()["data"]["funnel"][0]["count"] is None
 
 
 @pytest.mark.skipif(not check_connection()["connected"], reason="PostgreSQL not reachable")
@@ -142,3 +147,39 @@ def test_policy_extract_and_diff_use_source_text_only() -> None:
     assert changes
     assert changes[0]["change_kind"] in {"numeric", "amended"}
     assert "9000" not in changes[0]["summary"]
+
+
+def test_pick_in_force_uses_effective_window() -> None:
+    from datetime import date
+
+    from app.services.policies import pick_in_force
+
+    class _Version:
+        def __init__(self, number: int, start: date | None, end: date | None) -> None:
+            self.version_number = number
+            self.effective_from = start
+            self.effective_to = end
+
+    old = _Version(1, date(2020, 1, 1), date(2023, 12, 31))
+    new = _Version(2, date(2024, 1, 1), None)
+    assert pick_in_force([old, new], date(2022, 6, 1)).version_number == 1  # type: ignore[union-attr]
+    assert pick_in_force([old, new], date(2025, 1, 1)).version_number == 2  # type: ignore[union-attr]
+    assert pick_in_force([old], date(2019, 1, 1)) is None
+
+
+@pytest.mark.skipif(not check_connection()["connected"], reason="PostgreSQL not reachable")
+def test_policy_compare_echoes_as_of() -> None:
+    listed = client.get("/api/v1/policies").json()["data"]["policies"]
+    if not listed:
+        pytest.skip("no ingested policies")
+    policy_id = listed[0]["id"]
+    response = client.get(f"/api/v1/policies/{policy_id}/compare", params={"as_of": "2024-06-01"})
+    assert response.status_code == 200
+    data = response.json()["data"]
+    assert data["asOf"] == "2024-06-01"
+    assert "to_version" in data
+    if data["to_version"]:
+        assert "effective_from" in data["to_version"]
+        assert "effective_to" in data["to_version"]
+    if data.get("from_version") and data.get("to_version") and data["from_version"]["id"] == data["to_version"]["id"]:
+        assert data["note"] == "This date is covered by the same ingested version as the current gazette."

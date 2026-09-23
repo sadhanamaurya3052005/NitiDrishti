@@ -3,9 +3,9 @@
 import { useEffect, useState } from 'react';
 
 /**
- * Real connectivity state. Offline handling matters here because the platform
- * is meant to work at rural kiosks with unstable links. The PWA caches the
- * shell when a service worker is registered.
+ * Real connectivity state. CSC can queue dossiers in IndexedDB.
+ * When the catalog service worker is registered, the last successful
+ * published-scheme fetch may be readable offline. Eligibility still needs the API.
  */
 export function useOnlineStatus(): boolean {
   const [online, setOnline] = useState(true);

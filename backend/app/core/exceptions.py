@@ -54,3 +54,8 @@ class AIFailureError(AppError):
 class DBError(AppError):
     code = "DB_ERROR"
     status_code = 500
+
+
+class RateLimitError(AppError):
+    code = "RATE_LIMITED"
+    status_code = 429

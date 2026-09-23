@@ -135,5 +135,27 @@ class IngestionLogRepository(BaseRepository[IngestionLog]):
         )
         return self.session.scalar(stmt)
 
+    def latest_finished_for_source(self, source_id: UUID) -> IngestionLog | None:
+        stmt = (
+            select(IngestionLog)
+            .where(IngestionLog.source_id == source_id, IngestionLog.status != "running")
+            .order_by(IngestionLog.started_at.desc())
+            .limit(1)
+        )
+        return self.session.scalar(stmt)
+
+    def count_failed(self) -> int:
+        stmt = select(func.count()).select_from(IngestionLog).where(IngestionLog.status == "failed")
+        return int(self.session.scalar(stmt) or 0)
+
     def latest_started_at(self) -> datetime | None:
         return self.session.scalar(select(func.max(IngestionLog.started_at)))
+
+    def list_failed(self, *, limit: int = 50) -> list[IngestionLog]:
+        stmt = (
+            select(IngestionLog)
+            .where(IngestionLog.status == "failed")
+            .order_by(IngestionLog.started_at.desc())
+            .limit(min(limit, 200))
+        )
+        return list(self.session.scalars(stmt).all())

@@ -20,7 +20,9 @@ from app.services.ingestion.base import retrieve
 from app.services.ingestion.extractors import extract_listing_urls, extract_schemes
 from app.services.ingestion.factory import connector_for
 from app.services.ingestion.http import RetrieveFn
+from app.services.ingestion.layers import PIPELINE_STAGES
 from app.services.ingestion.payload import IngestResult, SourceSpec
+from app.services.ingestion.quality import apply_quality
 from app.services.ingestion.registry import FIRST_CRAWL_MAX_DISCOVERED, FIRST_CRAWL_SOURCES
 from app.services.ingestion.snapshot import persist_snapshot
 from app.services.ingestion.validate import validate_scheme
@@ -93,6 +95,39 @@ class SchemeIngestionService:
                 )
             else:
                 document = existing
+                prior = self.logs.latest_finished_for_source(source.id)
+                if (
+                    prior is not None
+                    and prior.status == "ok"
+                    and prior.content_hash == payload.content_hash
+                ):
+                    self.sources.mark_checked(source)
+                    detail = json.dumps(
+                        {
+                            "layer": "bronze",
+                            "stage": "dedup_skip",
+                            "document": "existing",
+                            "stages": list(PIPELINE_STAGES[:3]),
+                        }
+                    )
+                    self.logs.finish(
+                        log_row,
+                        status="ok",
+                        http_status=payload.status_code,
+                        rows_upserted=0,
+                        content_hash=payload.content_hash,
+                        detail=detail,
+                    )
+                    return IngestResult(
+                        source_url=spec.url,
+                        status="ok",
+                        http_status=payload.status_code,
+                        rows_upserted=0,
+                        versions_created=0,
+                        unchanged=True,
+                        content_hash=payload.content_hash,
+                        detail=detail,
+                    )
 
             parsed = connector_for(spec.connector_type, self.retrieve_fn).parse(payload)
             child_urls = [
@@ -105,6 +140,7 @@ class SchemeIngestionService:
             versions = 0
             kinds: list[str] = []
             for scheme in extract_schemes(parsed, spec):
+                apply_quality(scheme, retrieved_at=payload.retrieved_at)
                 validate_scheme(scheme)
                 _scheme, created, change_kind = self.writer.apply(scheme, document)
                 rows += 1
@@ -115,10 +151,12 @@ class SchemeIngestionService:
             unchanged = existing is not None and versions == 0
             detail = json.dumps(
                 {
+                    "layer": "gold" if versions else "silver",
                     "versions_created": versions,
                     "changes": kinds,
                     "children": len(child_urls),
                     "document": "existing" if existing is not None else "new",
+                    "stages": list(PIPELINE_STAGES),
                 }
             )
             self.logs.finish(
