@@ -11,11 +11,25 @@ export interface EvaluatedRule {
   explanation: string;
 }
 
+export interface RuleConflict {
+  kind: string;
+  message: string;
+  values?: number[];
+  rules?: string[];
+}
+
 export interface SchemeEvaluation {
   schemeId: string;
   status: 'ELIGIBLE' | 'PARTIAL_INFO' | 'INELIGIBLE';
   score: number;
   rules: EvaluatedRule[];
+  asOf?: string | null;
+  versionNumber?: number | null;
+  sourceUrl?: string | null;
+  effectiveFrom?: string | null;
+  effectiveTo?: string | null;
+  disclaimer?: string | null;
+  conflicts?: RuleConflict[];
 }
 
 function checkRule(rule: SchemeRule, profile: CitizenProfile): EvaluatedRule {

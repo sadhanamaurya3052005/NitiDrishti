@@ -63,7 +63,7 @@ const en: AppCopy = {
     listen: 'Listen to this page',
     stop: 'Stop reading',
     online: 'Online',
-    offline: 'Offline — local engine',
+    offline: 'Offline — reconnect for catalog',
     roleLabel: 'Viewing as',
     previewNote: 'Guest role is a preview. A signed-in session uses the server role.',
   },
@@ -89,7 +89,7 @@ const en: AppCopy = {
       name: 'Citizen & Student',
       short: 'Citizen',
       purpose:
-        'One place to see which schemes, scholarships, jobs and internships apply to you, why you qualify, and what to do next.',
+        'One place to see which schemes, scholarships, jobs and internships apply to you on declared facts — not a department sanction — and what to do next.',
       modules: [
         'Personalised opportunity stream ranked by relevance and deadline',
         'Eligibility result with a pass or fail reason for every condition',
@@ -113,9 +113,9 @@ const en: AppCopy = {
       name: 'Nyay-Mitra',
       short: 'Nyay-Mitra',
       purpose:
-        'Reads complex government documents, extracts the rules inside them, and shows exactly what changed between versions.',
+        'Reads official gazette text, versions clauses for review, and shows what changed between versions. Scanned pages use local Tesseract when the officer OCR preview is used.',
       modules: [
-        'Upload or ingest gazettes, circulars, notifications and scanned PDFs',
+        'Upload or ingest gazettes, circulars and text PDFs',
         'Clause extraction with page and section evidence',
         'Machine-readable eligibility rules with a confidence score',
         'Old versus new comparison with the exact numeric change and who it affects',
@@ -125,9 +125,9 @@ const en: AppCopy = {
       name: 'Welfare Officer',
       short: 'Officer',
       purpose:
-        'Where applications stall, which stage loses citizens, and how long delivery actually takes.',
+        'Where catalog coverage stands, and where an application funnel can appear once those rows exist.',
       modules: [
-        'Coverage, verification, approval and delivery counts',
+        'Coverage, verification and catalog counts (application funnel when rows exist)',
         'Drop-off funnel across the application journey',
         'Average processing time per stage',
         'Every figure traceable to the query that produced it',
@@ -136,10 +136,10 @@ const en: AppCopy = {
     analytics: {
       name: 'District Analytics',
       short: 'Analytics',
-      purpose: 'Demand against coverage, district by district, on real geography.',
+      purpose: 'Demand against coverage, district by district, on bundled TopoJSON geometry.',
       modules: [
         'District table with demand index, coverage and gap percentage',
-        'Map-based gap analysis using official district geometry',
+        'Map-based gap analysis using bundled TopoJSON district geometry',
         'Severity ranking to prioritise intervention',
         'Trend view as ingestion history builds up',
       ],
@@ -169,7 +169,7 @@ const hi: AppCopy = {
     listen: 'यह पृष्ठ सुनिए',
     stop: 'पढ़ना रोकें',
     online: 'ऑनलाइन',
-    offline: 'ऑफ़लाइन — स्थानीय इंजन',
+    offline: 'ऑफ़लाइन — कैटलॉग के लिए फिर जुड़ें',
     roleLabel: 'इस रूप में',
     previewNote: 'अतिथि भूमिका पूर्वावलोकन है। साइन-इन सत्र सर्वर भूमिका का उपयोग करता है।',
   },
@@ -195,7 +195,7 @@ const hi: AppCopy = {
       name: 'नागरिक एवं विद्यार्थी',
       short: 'नागरिक',
       purpose:
-        'एक ही जगह देखिए कि कौन सी योजनाएँ, छात्रवृत्तियाँ, नौकरियाँ और इंटर्नशिप आप पर लागू होती हैं, आप क्यों पात्र हैं, और आगे क्या करना है।',
+        'एक ही जगह देखिए कि कौन सी योजनाएँ, छात्रवृत्तियाँ, नौकरियाँ और इंटर्नशिप आपके घोषित तथ्यों पर लागू होती हैं — विभाग की स्वीकृति नहीं — और आगे क्या करना है।',
       modules: [
         'प्रासंगिकता और समय-सीमा के अनुसार क्रमित व्यक्तिगत अवसर सूची',
         'हर शर्त के पास/फेल कारण के साथ पात्रता परिणाम',
@@ -219,9 +219,9 @@ const hi: AppCopy = {
       name: 'न्याय-मित्र',
       short: 'न्याय-मित्र',
       purpose:
-        'जटिल सरकारी दस्तावेज़ पढ़ता है, उनमें छिपे नियम निकालता है, और बताता है कि दो संस्करणों के बीच ठीक क्या बदला।',
+        'आधिकारिक राजपत्र पाठ पढ़ता है, क्लॉज़ समीक्षा के लिए संस्करणित करता है, और दो संस्करणों का अंतर दिखाता है। स्कैन पृष्ठ अधिकारी OCR पूर्वावलोकन पर स्थानीय Tesseract से।',
       modules: [
-        'गजट, परिपत्र, अधिसूचना और स्कैन किए PDF अपलोड या ingest करें',
+        'गजट, परिपत्र और पाठ PDF अपलोड या ingest करें',
         'पृष्ठ और अनुभाग प्रमाण के साथ क्लॉज़ निष्कर्षण',
         'विश्वास स्कोर सहित मशीन-पठनीय पात्रता नियम',
         'पुराने बनाम नए की तुलना, सटीक संख्यात्मक बदलाव और प्रभावित वर्ग के साथ',
@@ -231,9 +231,9 @@ const hi: AppCopy = {
       name: 'कल्याण अधिकारी',
       short: 'अधिकारी',
       purpose:
-        'आवेदन कहाँ अटकते हैं, किस चरण पर नागरिक छूटते हैं, और वितरण में वास्तव में कितना समय लगता है।',
+        'कैटलॉग कवरेज कहाँ है, और आवेदन फ़नल उन पंक्तियों के आने पर कहाँ दिख सकता है।',
       modules: [
-        'कवरेज, सत्यापन, स्वीकृति और वितरण की गिनती',
+        'कवरेज, सत्यापन और कैटलॉग गणना (आवेदन फ़नल जब पंक्तियाँ हों)',
         'आवेदन यात्रा का ड्रॉप-ऑफ़ फ़नल',
         'प्रति चरण औसत प्रसंस्करण समय',
         'हर आँकड़ा उस क्वेरी से जुड़ा, जिसने उसे बनाया',
@@ -242,10 +242,10 @@ const hi: AppCopy = {
     analytics: {
       name: 'ज़िला एनालिटिक्स',
       short: 'एनालिटिक्स',
-      purpose: 'वास्तविक भूगोल पर, ज़िले-दर-ज़िले माँग बनाम कवरेज।',
+      purpose: 'बंडल TopoJSON भूगोल पर, ज़िले-दर-ज़िले माँग बनाम कवरेज।',
       modules: [
         'माँग सूचकांक, कवरेज और अंतर प्रतिशत वाली ज़िला तालिका',
-        'आधिकारिक ज़िला भूगोल पर नक्शा-आधारित अंतर विश्लेषण',
+        'बंडल TopoJSON ज़िला ज्यामिति पर नक्शा-आधारित अंतर विश्लेषण',
         'हस्तक्षेप की प्राथमिकता तय करने हेतु गंभीरता श्रेणी',
         'ingestion इतिहास बढ़ने के साथ प्रवृत्ति दृश्य',
       ],

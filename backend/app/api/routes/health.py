@@ -26,6 +26,13 @@ def health() -> HealthResponse:
     )
 
 
+@router.get("/ready", summary="Readiness: database, raw storage, scheduler flag")
+def ready() -> dict:
+    from app.core.ready import readiness_payload
+
+    return readiness_payload()
+
+
 @router.get("/api/version", response_model=VersionResponse, summary="Build metadata")
 def version() -> VersionResponse:
     return VersionResponse(

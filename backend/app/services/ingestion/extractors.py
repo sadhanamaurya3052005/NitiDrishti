@@ -9,6 +9,7 @@ from urllib.parse import urlparse
 from bs4 import BeautifulSoup
 
 from app.models.enums import RULE_KINDS, SCHEME_CATEGORIES
+from app.services.ingestion.normalize import iter_rupee_amounts, rupees_from_text
 from app.services.ingestion.payload import (
     NormalizedBenefit,
     NormalizedDocumentNeed,
@@ -23,8 +24,8 @@ _AGE_RE = re.compile(
     r"(?:age|aged|minimum age|above|at least)\s*(?:of\s*)?(\d{1,2})\s*(?:\+|years?|yrs?)",
     re.I,
 )
-_RUPEE_RE = re.compile(
-    r"(?:₹|rs\.?|inr)\s*([\d,]+(?:\.\d+)?)\s*(lakh|lakhs|crore|cr)?",
+_INCOME_HINT = re.compile(
+    r"(?:annual family income|family income|household income|income must not exceed|income not exceed|income up to|income upto)",
     re.I,
 )
 _DOC_HINTS = (
@@ -127,9 +128,19 @@ def extract_schemes(parsed: ParsedDocument, spec: SourceSpec) -> list[Normalized
     if parsed.rows and spec.connector_type in {"json", "tabular"}:
         schemes = [scheme for row in parsed.rows if (scheme := _from_row(row, parsed, spec))]
         if schemes:
-            return schemes
+            return [_apply_ocr_confidence(scheme, parsed) for scheme in schemes]
     scheme = _from_document(parsed, spec)
-    return [scheme] if scheme else []
+    return [_apply_ocr_confidence(scheme, parsed)] if scheme else []
+
+
+def _apply_ocr_confidence(scheme: NormalizedScheme, parsed: ParsedDocument) -> NormalizedScheme:
+    """Low-confidence OCR never auto-publishes. A language model does not vote."""
+    if parsed.ocr_confidence is None:
+        return scheme
+    scheme.confidence = round(min(scheme.confidence, parsed.ocr_confidence), 2)
+    if parsed.ocr_confidence < 0.5:
+        scheme.status = "needs_review"
+    return scheme
 
 
 def _from_document(parsed: ParsedDocument, spec: SourceSpec) -> NormalizedScheme | None:
@@ -378,27 +389,11 @@ def _badges(spec: SourceSpec, category: str) -> tuple[str, str]:
 
 
 def _benefits_from_text(text: str) -> list[NormalizedBenefit]:
-    matches = _RUPEE_RE.findall(text)
     benefits: list[NormalizedBenefit] = []
-    seen: set[str] = set()
-    for amount, unit in matches[:3]:
-        number = amount.replace(",", "")
-        label = f"₹{amount}" + (f" {unit}" if unit else "")
-        if label in seen:
-            continue
-        seen.add(label)
-        paise = None
-        try:
-            rupees = float(number)
-            if unit.lower().startswith("lakh"):
-                rupees *= 100000
-            elif unit.lower().startswith("cr"):
-                rupees *= 10000000
-            paise = int(rupees * 100)
-        except ValueError:
-            paise = None
+    for rupees in iter_rupee_amounts(text)[:3]:
+        label = f"₹{rupees:,}"
         benefits.append(
-            NormalizedBenefit(label=label, label_hi=label, amount_text=label, amount_paise=paise)
+            NormalizedBenefit(label=label, label_hi=label, amount_text=label, amount_paise=rupees * 100)
         )
     return benefits
 
@@ -417,6 +412,20 @@ def _rules_from_text(text: str) -> list[NormalizedRule]:
                     detail=f"Official page mentions a minimum age of {age}.",
                     ast_json={"op": "gte", "field": "age", "value": age},
                     age_min=age,
+                )
+            )
+    if _INCOME_HINT.search(text):
+        rupees = rupees_from_text(text)
+        if rupees is not None:
+            rules.append(
+                NormalizedRule(
+                    rule_key="income",
+                    kind="income",
+                    label=f"Income ≤ ₹{rupees:,}",
+                    detail=f"Official page caps annual family income at ₹{rupees:,}.",
+                    ast_json={"op": "lte", "field": "income", "value": rupees},
+                    income_limit=rupees,
+                    sort_order=1,
                 )
             )
     lowered = text.lower()

@@ -25,7 +25,7 @@ export function FaqAccordion() {
               className="mx-auto h-auto w-full max-w-sm object-contain drop-shadow-lg"
             />
             <p className="mt-3 text-center text-sm font-semibold text-ink">
-              {locale === 'hi' ? 'सबसे ज़रूरी दस प्रश्न' : 'Ten questions, answered straight'}
+              {locale === 'hi' ? 'सीधे उत्तर' : 'Straight answers'}
             </p>
           </div>
         </Reveal>

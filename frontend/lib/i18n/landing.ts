@@ -101,7 +101,7 @@ const en: LandingCopy = {
     titleAccent: 'turned into verified',
     titleTail: 'and explainable intelligence.',
     lede:
-      'NitiDrishti collects schemes, scholarships, jobs, internships and policy documents from official government sources through its own ingestion pipeline, understands them with AI, verifies them, and tells each citizen exactly what they qualify for — and why.',
+      'NitiDrishti collects schemes, scholarships, jobs, internships and policy documents from official government sources through its own ingestion pipeline. Structured rules print eligibility on facts you declare. That print is an assessment, not a government sanction — re-check the gazette before you apply.',
     ctaPrimary: 'See the workspaces',
     ctaSecondary: 'How the data arrives',
     stats: [
@@ -116,7 +116,7 @@ const en: LandingCopy = {
     title: 'Collect → Understand → Verify → Match → Alert → Analyse',
     steps: [
       { label: 'Collect', note: 'Official sources, automatically' },
-      { label: 'Understand', note: 'AI reads documents & PDFs' },
+      { label: 'Understand', note: 'Text extract + optional AI assist' },
       { label: 'Verify', note: 'Validation, source, version' },
       { label: 'Match', note: 'Deterministic rule engine' },
       { label: 'Alert', note: 'Deadlines & policy changes' },
@@ -156,8 +156,8 @@ const en: LandingCopy = {
         name: 'Nyay-Mitra Policy Intelligence',
         role: 'Policy analyst',
         points: [
-          'Reads complex and scanned government PDFs with OCR',
-          'Extracts clauses and machine-readable eligibility rules',
+          'Reads official text PDFs through the ingest connector (scanned OCR is not live)',
+          'Extracts clauses into versioned records for human review',
           'Old vs new policy diff with evidence and impact',
         ],
         status: 'Live — policy catalog and version diff',
@@ -178,11 +178,11 @@ const en: LandingCopy = {
         name: 'District Analytics Cockpit',
         role: 'Administrator · Analyst',
         points: [
-          'Demand versus coverage, district by district',
-          'Map-based gap analysis on real geometry',
+          'Demand versus coverage from published catalog counts',
+          'District map from bundled TopoJSON (name-join, not a PostGIS layer)',
           'Targeted intervention instead of guesswork',
         ],
-        status: 'Live — published counts; maps when PostGIS is on',
+        status: 'Live — published counts; map uses bundled district geometry',
       },
     ],
   },
@@ -212,9 +212,9 @@ const en: LandingCopy = {
       },
       {
         id: 'offline',
-        title: 'Offline-first for weak connectivity',
+        title: 'Kiosk queue for weak connectivity',
         body:
-          'A service worker and IndexedDB keep verified information and the eligibility engine working with no internet — every cached item labelled with when it was verified.',
+          'CSC can queue dossiers in IndexedDB on this device. A service worker may keep a published-scheme catalog snapshot from the last successful fetch. Eligibility still needs the API. This is not a full offline app.',
       },
       {
         id: 'voice',
@@ -237,7 +237,7 @@ const en: LandingCopy = {
       'This is the constraint the whole architecture is built around, because it decides whether the platform is honest, affordable and independent.',
     ruleTitle: 'No third-party or paid data API',
     ruleBody:
-      'Schemes, scholarships, jobs, internships and policy documents are collected by our own pipeline from official government sources: HTML pages, JavaScript-rendered pages, official PDFs, scanned PDFs via OCR, and published CSV, Excel, XML or JSON files.',
+      'Schemes, scholarships, jobs, internships and policy documents are collected by our own pipeline from official government sources: HTML pages, JavaScript-rendered pages, text PDFs, and published CSV, Excel, XML or JSON files. Scanned-PDF OCR is not live.',
     exceptionTitle: 'One narrow exception',
     exceptionBody:
       'An official government API is used only where the data is restricted and cannot be obtained any other way — for example DigiLocker document verification. Until such authorised access exists, the interface says “self-declared” instead of claiming a verification that never happened.',
@@ -247,8 +247,8 @@ const en: LandingCopy = {
       'Modular connector',
       'Automatic collection',
       'Raw snapshot',
-      'Extraction / OCR',
-      'AI understanding',
+      'Text extraction',
+      'AI assist (no eligibility vote)',
       'Normalisation',
       'Validation',
       'Deduplication',
@@ -263,22 +263,22 @@ const en: LandingCopy = {
     groups: [
       { label: 'Frontend', items: 'Next.js · TypeScript · Tailwind · Framer Motion' },
       { label: 'Backend', items: 'Python · FastAPI · SQLAlchemy · Alembic' },
-      { label: 'Data engineering', items: 'BeautifulSoup · Playwright · PyMuPDF · OCR · Pandas' },
-      { label: 'Database', items: 'PostgreSQL · PostGIS · full-text search' },
-      { label: 'AI / NLP', items: 'Local models · embeddings · RAG with citations · rule engine' },
-      { label: 'Platform', items: 'Native processes · scheduled workers · PWA offline' },
+      { label: 'Data engineering', items: 'BeautifulSoup · Playwright · pypdf · Pandas' },
+      { label: 'Database', items: 'PostgreSQL · pg_trgm · TopoJSON maps' },
+      { label: 'AI / NLP', items: 'Keyword assistant · AST rule engine' },
+      { label: 'Platform', items: 'Native processes · scheduled workers' },
     ],
   },
   footer: {
     tagline: 'Right Scheme. Right Opportunity. Right Rule. Right Time.',
     backendLabel: 'Backend',
-    note: 'Built as a major project. Government facts are shown with their official source and verification date.',
+    note: 'Government facts are shown with their official source. Eligibility prints are assessments, not sanctions.',
   },
   splash: {
     boot: [
       'Mounting local policy index…',
       'Compiling deterministic eligibility rules…',
-      'Pre-warming offline store & source registry…',
+      'Loading source registry…',
     ],
     badge: 'Official sources only · Zero paid data APIs',
     skip: 'Skip',
@@ -300,7 +300,7 @@ const hi: LandingCopy = {
     titleAccent: 'सत्यापित और समझ में आने वाली',
     titleTail: 'इंटेलिजेंस में बदलता है।',
     lede:
-      'NitiDrishti सरकारी योजनाएँ, छात्रवृत्तियाँ, नौकरियाँ, इंटर्नशिप और नीति दस्तावेज़ आधिकारिक सरकारी स्रोतों से अपनी ही ingestion पाइपलाइन द्वारा एकत्र करता है, उन्हें AI से समझता है, सत्यापित करता है, और हर नागरिक को बताता है कि वह किसके लिए पात्र है — और क्यों।',
+      'NitiDrishti सरकारी योजनाएँ, छात्रवृत्तियाँ, नौकरियाँ, इंटर्नशिप और नीति दस्तावेज़ आधिकारिक सरकारी स्रोतों से अपनी ही ingestion पाइपलाइन द्वारा एकत्र करता है। संरचित नियम आपके घोषित तथ्यों पर पात्रता छापते हैं। यह मूल्यांकन है, सरकारी स्वीकृति नहीं — आवेदन से पहले राजपत्र पुनः जाँचें।',
     ctaPrimary: 'वर्कस्पेस देखिए',
     ctaSecondary: 'डेटा कैसे आता है',
     stats: [
@@ -315,7 +315,7 @@ const hi: LandingCopy = {
     title: 'संग्रह → समझ → सत्यापन → मिलान → चेतावनी → विश्लेषण',
     steps: [
       { label: 'संग्रह', note: 'आधिकारिक स्रोत, स्वतः' },
-      { label: 'समझ', note: 'AI दस्तावेज़ और PDF पढ़ता है' },
+      { label: 'समझ', note: 'पाठ निष्कर्षण + वैकल्पिक AI सहायता' },
       { label: 'सत्यापन', note: 'वैलिडेशन, स्रोत, संस्करण' },
       { label: 'मिलान', note: 'नियम-आधारित पात्रता इंजन' },
       { label: 'अलर्ट', note: 'समय-सीमा और नीति परिवर्तन' },
@@ -355,8 +355,8 @@ const hi: LandingCopy = {
         name: 'न्याय-मित्र नीति इंटेलिजेंस',
         role: 'नीति विश्लेषक',
         points: [
-          'जटिल और स्कैन किए गए सरकारी PDF को OCR से पढ़ता है',
-          'क्लॉज़ और मशीन-पठनीय पात्रता नियम निकालता है',
+          'आधिकारिक पाठ PDF ingest कनेक्टर से पढ़ता है (स्कैन OCR लाइव नहीं)',
+          'क्लॉज़ संस्करणित रिकॉर्ड में, मानव समीक्षा के लिए',
           'पुरानी बनाम नई नीति का अंतर, प्रमाण और प्रभाव के साथ',
         ],
         status: 'उपलब्ध — नीति कैटलॉग और संस्करण अंतर',
@@ -377,11 +377,11 @@ const hi: LandingCopy = {
         name: 'ज़िला एनालिटिक्स कॉकपिट',
         role: 'प्रशासक · विश्लेषक',
         points: [
-          'ज़िले-दर-ज़िले माँग बनाम कवरेज',
-          'वास्तविक भौगोलिक डेटा पर नक्शा-आधारित अंतर विश्लेषण',
+          'प्रकाशित कैटलॉग गणना से माँग बनाम कवरेज',
+          'बंडल TopoJSON से ज़िला नक्शा (नाम-जोड़, PostGIS परत नहीं)',
           'अनुमान की जगह लक्षित हस्तक्षेप',
         ],
-        status: 'उपलब्ध — प्रकाशित गणना; PostGIS चालू होने पर नक्शा',
+        status: 'उपलब्ध — प्रकाशित गणना; नक्शा बंडल ज़िला ज्यामिति से',
       },
     ],
   },
@@ -411,9 +411,9 @@ const hi: LandingCopy = {
       },
       {
         id: 'offline',
-        title: 'कमज़ोर कनेक्टिविटी के लिए ऑफ़लाइन-फ़र्स्ट',
+        title: 'कमज़ोर कनेक्टिविटी के लिए कियोस्क कतार',
         body:
-          'सर्विस वर्कर और IndexedDB बिना इंटरनेट भी सत्यापित जानकारी और पात्रता इंजन चलाते हैं — हर संचित प्रविष्टि पर सत्यापन की तारीख अंकित रहती है।',
+          'CSC इस डिवाइस पर IndexedDB में डोज़ियर कतार रख सकता है। सर्विस वर्कर पिछली सफल प्रकाशित-योजना प्राप्ति का स्नैपशॉट रख सकता है। पात्रता के लिए API चाहिए। यह पूरा ऑफ़लाइन ऐप नहीं।',
       },
       {
         id: 'voice',
@@ -436,7 +436,7 @@ const hi: LandingCopy = {
       'पूरा आर्किटेक्चर इसी शर्त पर बना है, क्योंकि यही तय करता है कि प्लेटफ़ॉर्म ईमानदार, किफ़ायती और स्वतंत्र रहेगा या नहीं।',
     ruleTitle: 'कोई तीसरे पक्ष या पेड डेटा API नहीं',
     ruleBody:
-      'योजनाएँ, छात्रवृत्तियाँ, नौकरियाँ, इंटर्नशिप और नीति दस्तावेज़ हमारी अपनी पाइपलाइन आधिकारिक सरकारी स्रोतों से लाती है: HTML पेज, जावास्क्रिप्ट-रेंडर पेज, आधिकारिक PDF, OCR द्वारा स्कैन किए PDF, तथा प्रकाशित CSV, Excel, XML या JSON फ़ाइलें।',
+      'योजनाएँ, छात्रवृत्तियाँ, नौकरियाँ, इंटर्नशिप और नीति दस्तावेज़ हमारी अपनी पाइपलाइन आधिकारिक सरकारी स्रोतों से लाती है: HTML पेज, जावास्क्रिप्ट-रेंडर पेज, पाठ PDF, तथा प्रकाशित CSV, Excel, XML या JSON फ़ाइलें। स्कैन-PDF OCR लाइव नहीं है।',
     exceptionTitle: 'केवल एक सीमित अपवाद',
     exceptionBody:
       'आधिकारिक सरकारी API सिर्फ़ वहाँ उपयोग होगा जहाँ डेटा प्रतिबंधित है और किसी अन्य तरीक़े से नहीं मिल सकता — जैसे DigiLocker दस्तावेज़ सत्यापन। जब तक वैसी अधिकृत पहुँच न हो, इंटरफ़ेस “स्व-घोषित” लिखेगा, झूठा सत्यापन नहीं दिखाएगा।',
@@ -446,8 +446,8 @@ const hi: LandingCopy = {
       'मॉड्यूलर कनेक्टर',
       'स्वतः संग्रह',
       'रॉ स्नैपशॉट',
-      'निष्कर्षण / OCR',
-      'AI समझ',
+      'पाठ निष्कर्षण',
+      'AI सहायता (पात्रता वोट नहीं)',
       'सामान्यीकरण',
       'वैलिडेशन',
       'डुप्लिकेट निवारण',
@@ -462,22 +462,22 @@ const hi: LandingCopy = {
     groups: [
       { label: 'फ़्रंटएंड', items: 'Next.js · TypeScript · Tailwind · Framer Motion' },
       { label: 'बैकएंड', items: 'Python · FastAPI · SQLAlchemy · Alembic' },
-      { label: 'डेटा इंजीनियरिंग', items: 'BeautifulSoup · Playwright · PyMuPDF · OCR · Pandas' },
-      { label: 'डेटाबेस', items: 'PostgreSQL · PostGIS · फुल-टेक्स्ट सर्च' },
-      { label: 'AI / NLP', items: 'लोकल मॉडल · एम्बेडिंग · प्रमाण-सहित RAG · नियम इंजन' },
-      { label: 'प्लेटफ़ॉर्म', items: 'नेटिव प्रोसेस · शेड्यूल्ड वर्कर · PWA ऑफ़लाइन' },
+      { label: 'डेटा इंजीनियरिंग', items: 'BeautifulSoup · Playwright · pypdf · Pandas' },
+      { label: 'डेटाबेस', items: 'PostgreSQL · pg_trgm · TopoJSON नक्शा' },
+      { label: 'AI / NLP', items: 'कीवर्ड सहायक · AST नियम इंजन' },
+      { label: 'प्लेटफ़ॉर्म', items: 'नेटिव प्रोसेस · शेड्यूल्ड वर्कर' },
     ],
   },
   footer: {
     tagline: 'सही योजना। सही अवसर। सही नियम। सही समय।',
     backendLabel: 'बैकएंड',
-    note: 'मेजर प्रोजेक्ट के रूप में निर्मित। सरकारी तथ्य उनके आधिकारिक स्रोत और सत्यापन तिथि के साथ दिखाए जाते हैं।',
+    note: 'सरकारी तथ्य आधिकारिक स्रोत के साथ दिखाए जाते हैं। पात्रता प्रिंट मूल्यांकन है, स्वीकृति नहीं।',
   },
   splash: {
     boot: [
       'स्थानीय नीति सूचकांक लोड हो रहा है…',
       'पात्रता नियम संकलित हो रहे हैं…',
-      'ऑफ़लाइन स्टोर और स्रोत रजिस्ट्री तैयार हो रही है…',
+      'स्रोत रजिस्ट्री लोड हो रही है…',
     ],
     badge: 'केवल आधिकारिक स्रोत · कोई पेड डेटा API नहीं',
     skip: 'छोड़ें',

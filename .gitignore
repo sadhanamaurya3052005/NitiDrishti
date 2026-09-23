@@ -36,7 +36,11 @@ coverage.xml
 storage/raw/
 storage/processed/
 storage/tmp/
+storage/backups/
 !storage/.gitkeep
+
+# Local PDF/doc extracts used while reading specs — not product source
+.pdf-extract/
 
 # Databases
 *.db

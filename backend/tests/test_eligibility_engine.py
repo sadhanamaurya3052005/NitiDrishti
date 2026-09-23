@@ -110,3 +110,27 @@ def test_category_in_operator() -> None:
     )
     assert evaluate_rule(rule, _profile(category="SC")).verdict == "pass"
     assert evaluate_rule(rule, _profile(category="GEN")).verdict == "fail"
+
+
+def test_not_flips_pass_and_fail() -> None:
+    rule = RuleSpec(
+        rule_key="not_male",
+        kind="gender",
+        label="Not male",
+        ast_json={"op": "not", "child": {"op": "eq", "field": "gender", "value": "male"}},
+    )
+    assert evaluate_rule(rule, _profile(gender="female")).verdict == "pass"
+    assert evaluate_rule(rule, _profile(gender="male")).verdict == "fail"
+
+
+def test_refold_fail_dominates() -> None:
+    from app.services.eligibility.engine import EvaluatedRule, refold_evaluation
+
+    folded = refold_evaluation(
+        "x",
+        [
+            EvaluatedRule("a", "A", "", "pass", "ok"),
+            EvaluatedRule("b", "B", "", "fail", "no"),
+        ],
+    )
+    assert folded.status == "INELIGIBLE"

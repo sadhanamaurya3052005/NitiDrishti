@@ -4,6 +4,7 @@ Importing this package registers every table on Base.metadata for Alembic.
 """
 
 from app.models.actions import ActionDossier, Alert, AuditLog
+from app.models.applications import Application
 from app.models.embeddings import DocumentEmbedding
 from app.models.geography import District, State
 from app.models.identity import Role, User, UserProfile, UserRole
@@ -38,11 +39,13 @@ PRODUCTION_TABLES = (
     "alerts",
     "action_dossiers",
     "audit_logs",
+    "applications",
 )
 
 __all__ = [
     "PRODUCTION_TABLES",
     "ActionDossier",
+    "Application",
     "Alert",
     "AuditLog",
     "Benefit",

@@ -14,13 +14,14 @@ import { APP, sessionDeskPath, type SessionMode } from '@/lib/config';
 
 export function AuthScreen({ mode }: { mode: 'login' | 'register' }) {
   const { home, desk } = useLocale();
-  const { signIn, signInAccount } = useExperience();
+  const { signIn, signInAccount, session, purgeAccount } = useExperience();
   const router = useRouter();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [forgetBusy, setForgetBusy] = useState(false);
 
   const enterGuest = () => {
     signIn('guest', name.trim() || undefined);
@@ -118,6 +119,27 @@ export function AuthScreen({ mode }: { mode: 'login' | 'register' }) {
           </Button>
         </div>
       </div>
+
+      {session?.accessToken ? (
+        <div className="mt-8 rounded-xl border border-line px-3 py-3">
+          <p className="text-[11px] text-ink-muted">{home.auth.forgetHint}</p>
+          <Button
+            variant="ghost"
+            className="mt-2 w-full"
+            disabled={forgetBusy}
+            onClick={() => {
+              setForgetBusy(true);
+              void purgeAccount()
+                .catch((caught) => {
+                  setError(caught instanceof ApiError ? caught.message : home.auth.failed);
+                })
+                .finally(() => setForgetBusy(false));
+            }}
+          >
+            {forgetBusy ? home.auth.forgetBusy : home.auth.forget}
+          </Button>
+        </div>
+      ) : null}
 
       <p className="mt-8 text-center text-sm text-ink-muted">
         {mode === 'login' ? (

@@ -9,34 +9,29 @@ import { Reveal } from '@/components/motion/Reveal';
 
 export function DocumentLocker() {
   const { home } = useLocale();
-  const { setDocument, patchProfile, roleView, dossierQueue } = useExperience();
-  const [scanning, setScanning] = useState(false);
+  const { setDocument, roleView, dossierQueue } = useExperience();
+  const [busy, setBusy] = useState(false);
   const [preview, setPreview] = useState<Record<string, string> | null>(null);
   const [fileName, setFileName] = useState<string | null>(null);
 
   const ingest = (file: File) => {
     setFileName(file.name);
-    setScanning(true);
-    setPreview(null);
+    setBusy(true);
+    const lower = file.name.toLowerCase();
+    if (lower.includes('land') || lower.includes('khasra')) {
+      setDocument('land', true);
+    } else if (lower.includes('ration')) {
+      setDocument('ration', true);
+    } else if (lower.includes('aadhaar') || lower.includes('aadhar')) {
+      setDocument('aadhaar', true);
+    }
     window.setTimeout(() => {
-      const lower = file.name.toLowerCase();
-      if (lower.includes('land') || lower.includes('khasra')) {
-        patchProfile({ landHectares: Math.max(0.5, 1.8), occupation: 'farmer' });
-        setDocument('land', true);
-      } else if (lower.includes('ration')) {
-        setDocument('ration', true);
-      } else {
-        setDocument('aadhaar', true);
-      }
       setPreview({
-        name: 'Self-declared (local OCR)',
-        age: 'Not stored as an identity number',
-        address: 'District retained only in browser memory',
-        category: 'See profile filters — no raw ID digits',
         file: file.name,
+        note: 'Self-declared tick only. Identity images stay in this tab and are not OCRed or uploaded.',
       });
-      setScanning(false);
-    }, 1400);
+      setBusy(false);
+    }, 200);
   };
 
   return (
@@ -73,13 +68,10 @@ export function DocumentLocker() {
         </Reveal>
 
         <div className="nd-glass p-6">
-          {scanning ? (
+          {busy ? (
             <div className="flex h-full min-h-[220px] flex-col items-center justify-center gap-3">
               <FileScan className="h-8 w-8 animate-pulse text-saffron" />
               <p className="text-sm font-semibold">{home.locker.scanning}</p>
-              <div className="h-1.5 w-40 overflow-hidden rounded-pill bg-canvas-deep">
-                <div className="h-full w-1/2 animate-shimmer bg-saffron" />
-              </div>
             </div>
           ) : preview ? (
             <div>

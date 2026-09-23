@@ -1,0 +1,31 @@
+name: backend
+
+on:
+  push:
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend.yml"
+  pull_request:
+    paths:
+      - "backend/**"
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: pip install -r requirements.txt
+      - name: Lint new modules
+        run: ruff check app/services/disaster.py app/api/routes/disaster.py app/schemas/disaster.py scripts/backup_verify.py tests/test_disaster.py tests/test_backup_drill.py
+      - name: Unit tests
+        env:
+          APP_ENV: testing
+          RATE_LIMIT_ENABLED: "false"
+        run: pytest -q --ignore=tests/test_district_analytics.py

@@ -57,14 +57,17 @@ export const viewport: Viewport = {
 
 const splashGuard = `(function(){try{if(sessionStorage.getItem('${SPLASH_SESSION_KEY}')==='1'){document.documentElement.classList.add('nd-splash-seen');}}catch(e){}})();`;
 
-const swBust = `(function(){try{if(!('serviceWorker'in navigator))return;if(sessionStorage.getItem('nd.sw.cleared')==='1')return;navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(r){return r.unregister();}));}).then(function(){return caches.keys();}).then(function(keys){return Promise.all(keys.map(function(k){return caches.delete(k);}));}).then(function(){sessionStorage.setItem('nd.sw.cleared','1');location.reload();}).catch(function(){});}catch(e){}})();`;
+const catalogCacheOn = process.env.NEXT_PUBLIC_FEATURE_OFFLINE_CATALOG !== 'false';
+const swGate = catalogCacheOn
+  ? `(function(){try{if(!('serviceWorker'in navigator))return;if(localStorage.getItem('nd.offlineCatalog')!=='0')return;navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(r){return r.unregister();}));}).then(function(){return caches.keys();}).then(function(keys){return Promise.all(keys.map(function(k){return caches.delete(k);}));}).catch(function(){});}catch(e){}})();`
+  : `(function(){try{if(!('serviceWorker'in navigator))return;navigator.serviceWorker.getRegistrations().then(function(rs){return Promise.all(rs.map(function(r){return r.unregister();}));}).then(function(){return caches.keys();}).then(function(keys){return Promise.all(keys.map(function(k){return caches.delete(k);}));}).catch(function(){});}catch(e){}})();`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${jakarta.variable} ${devanagari.variable}`} suppressHydrationWarning>
       <body className="min-h-dvh bg-canvas font-sans text-ink">
         <script dangerouslySetInnerHTML={{ __html: splashGuard }} />
-        <script dangerouslySetInnerHTML={{ __html: swBust }} />
+        <script dangerouslySetInnerHTML={{ __html: swGate }} />
         <LocaleProvider>
           <ThemeProvider>
             <A11yProvider>

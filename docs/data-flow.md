@@ -3,8 +3,10 @@
 ```
 Official source  →  connector (html/pdf/json/tabular/dynamic)
                  →  whitelist + robots.txt
-                 →  source_documents (content hash)
-                 →  scheme_versions / eligibility_rules / benefits / required_documents
+                 →  bronze snapshot (content hash, never overwrite)
+                 →  quality flags + parse/OCR + normalize
+                 →  silver (needs_review) → HITL → gold scheme_versions
+                 →  eligibility_rules.ast_json (LLM does not vote)
 Citizen / CSC / officer  →  FastAPI  →  service  →  repository  →  PostgreSQL
 ```
 

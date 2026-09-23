@@ -50,6 +50,8 @@ export interface PolicyVersionSummary {
   gazette_ref: string | null;
   source_url: string;
   retrieved_at: string;
+  effective_from?: string | null;
+  effective_to?: string | null;
   is_current: boolean;
 }
 
@@ -76,6 +78,7 @@ export interface PolicyCompare {
   to_version: PolicyVersionSummary;
   changes: PolicyChangeItem[];
   note?: string;
+  asOf?: string | null;
 }
 
 export interface AlertItem {
@@ -149,8 +152,9 @@ export function getPolicy(id: string): Promise<{ policy: PolicySummary & { versi
   return envelope(`/api/v1/policies/${id}`, { cache: 'no-store', skipAuth: true });
 }
 
-export function comparePolicy(id: string): Promise<PolicyCompare> {
-  return envelope<PolicyCompare>(`/api/v1/policies/${id}/compare`, { cache: 'no-store', skipAuth: true });
+export function comparePolicy(id: string, asOf?: string | null): Promise<PolicyCompare> {
+  const search = asOf ? `?as_of=${encodeURIComponent(asOf)}` : '';
+  return envelope<PolicyCompare>(`/api/v1/policies/${id}/compare${search}`, { cache: 'no-store', skipAuth: true });
 }
 
 export function getPolicyVersionClauses(
@@ -308,6 +312,45 @@ export function getDistrictDetail(districtId: string): Promise<DistrictDetail> {
 export function dispatchCscCamp(districtId: string): Promise<CscCampDispatch> {
   return envelope<CscCampDispatch>(`/api/v1/analytics/districts/${districtId}/csc-camp`, {
     method: 'POST',
+  });
+}
+
+export interface ApplicationRecord {
+  id: string;
+  scheme_id: string | null;
+  scheme_name: string;
+  district_id: string | null;
+  stage: string;
+  official_apply_url: string | null;
+  created_at: string;
+}
+
+export function createApplication(input: {
+  scheme_id: string;
+  district_id?: string;
+  stage?: 'Discovered' | 'Submitted';
+}): Promise<ApplicationRecord> {
+  return envelope<ApplicationRecord>('/api/v1/applications', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
+export function listApplications(): Promise<{ applications: ApplicationRecord[] }> {
+  return envelope<{ applications: ApplicationRecord[] }>('/api/v1/applications');
+}
+
+export function listApplicationQueue(): Promise<{ applications: ApplicationRecord[] }> {
+  return envelope<{ applications: ApplicationRecord[] }>('/api/v1/applications/queue');
+}
+
+export function recordApplicationStage(
+  applicationId: string,
+  stage: 'Submitted' | 'Tehsil Verified' | 'Sanctioned' | 'DBT Disbursed',
+): Promise<ApplicationRecord> {
+  return envelope<ApplicationRecord>(`/api/v1/applications/${encodeURIComponent(applicationId)}/stage`, {
+    method: 'PATCH',
+    body: JSON.stringify({ stage }),
   });
 }
 

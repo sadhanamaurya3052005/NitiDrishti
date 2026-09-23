@@ -54,6 +54,14 @@ ALERT_TYPES = ("NEW_SCHEME_MATCH", "DEADLINE_APPROACHING", "RULE_MODIFIED", "CSC
 
 DOSSIER_STATUSES = ("queued", "ready", "failed")
 
+APPLICATION_STAGES = (
+    "Discovered",
+    "Submitted",
+    "Tehsil Verified",
+    "Sanctioned",
+    "DBT Disbursed",
+)
+
 CHANGE_KINDS = ("added", "removed", "amended", "numeric")
 
 AUDIT_ACTIONS = (
@@ -64,4 +72,5 @@ AUDIT_ACTIONS = (
     "profile_purge",
     "ingestion_run",
     "review_approve",
+    "application_submit",
 )

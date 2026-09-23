@@ -10,7 +10,7 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.core.exceptions import AuthError, BusinessRuleError, DBError
+from app.core.exceptions import AuthError, BusinessRuleError, DBError, ValidationError
 from app.core.security import (
     access_expires_seconds,
     create_token,
@@ -21,6 +21,7 @@ from app.core.security import (
     verify_password,
 )
 from app.models.actions import ActionDossier, Alert, AuditLog
+from app.models.applications import Application
 from app.models.identity import User, UserProfile, UserRole
 from app.repositories.audit import AuditRepository
 from app.repositories.profiles import ProfileRepository
@@ -36,6 +37,17 @@ from app.schemas.auth import (
 )
 
 DEFAULT_ROLE = "CITIZEN"
+RETAINED_PROFILE_FIELDS = (
+    "age",
+    "income",
+    "land_hectares",
+    "gender",
+    "category",
+    "occupation",
+    "state_id",
+    "district_id",
+    "notes",
+)
 
 
 def _role_codes(user: User) -> list[str]:
@@ -177,11 +189,23 @@ class AuthService:
             profile = UserProfile(user_id=user.id)
             self.profiles.add(profile)
             user.profile = profile
+
+        granting = data.get("consent_retention") is True
+        withdrawing = data.get("consent_retention") is False
+        will_retain = granting or (bool(profile.consent_retention) and not withdrawing)
+        retained_in_payload = [field for field in RETAINED_PROFILE_FIELDS if field in data]
+        if retained_in_payload and not will_retain:
+            raise ValidationError("consent_retention must be true before retaining a declared profile")
+
         changed: list[str] = []
         if "display_name" in payload.model_fields_set:
             changed.append("display_name")
-        if data.get("consent_retention") is True:
+        if granting:
             data["consent_at"] = datetime.now(UTC)
+        if withdrawing:
+            data["consent_at"] = None
+            for field in RETAINED_PROFILE_FIELDS:
+                data[field] = None
         for field, value in data.items():
             setattr(profile, field, value)
             changed.append(field)
@@ -210,6 +234,7 @@ class AuthService:
         self.session.flush()
         self.session.execute(delete(Alert).where(Alert.user_id == user_id))
         self.session.execute(delete(ActionDossier).where(ActionDossier.user_id == user_id))
+        self.session.execute(delete(Application).where(Application.user_id == user_id))
         self.session.execute(delete(UserProfile).where(UserProfile.user_id == user_id))
         self.session.execute(delete(UserRole).where(UserRole.user_id == user_id))
         self.session.expunge(user)
@@ -229,5 +254,6 @@ def table_counts(session: Session) -> dict[str, int]:
         "user_profiles": _count(UserProfile),
         "alerts": _count(Alert),
         "action_dossiers": _count(ActionDossier),
+        "applications": _count(Application),
         "audit_logs": _count(AuditLog),
     }

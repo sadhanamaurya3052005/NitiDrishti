@@ -16,7 +16,9 @@ from app.api.routes import auth, health
 from app.core.database import SessionLocal, check_connection, engine
 from app.core.middleware import RequestIdMiddleware
 from app.models.actions import ActionDossier, Alert, AuditLog
+from app.models.applications import Application
 from app.models.identity import Role, User, UserProfile, UserRole
+from app.models.schemes import Scheme
 from app.services.auth.service import table_counts
 
 
@@ -64,6 +66,7 @@ def _cleanup(email: str) -> None:
             return
         session.execute(delete(Alert).where(Alert.user_id == user.id))
         session.execute(delete(ActionDossier).where(ActionDossier.user_id == user.id))
+        session.execute(delete(Application).where(Application.user_id == user.id))
         session.execute(delete(UserProfile).where(UserProfile.user_id == user.id))
         session.execute(delete(UserRole).where(UserRole.user_id == user.id))
         session.delete(user)
@@ -192,23 +195,63 @@ def test_profile_update_and_account_purge_cascade(client: TestClient) -> None:
         data = _register(client, email)
         token = data["access_token"]
         headers = {"Authorization": f"Bearer {token}"}
+        blocked = client.patch(
+            "/api/v1/auth/profile",
+            headers=headers,
+            json={"age": 34, "income": 120000},
+        )
+        assert blocked.status_code == 422
+        assert blocked.json()["error"]["code"] == "VALIDATION_ERROR"
+
         patched = client.patch(
             "/api/v1/auth/profile",
             headers=headers,
-            json={"age": 34, "income": 120000, "notes": "aadhaar 123412341234 keep"},
+            json={
+                "consent_retention": True,
+                "age": 34,
+                "income": 120000,
+                "notes": "aadhaar 123412341234 keep",
+            },
         )
         assert patched.status_code == 200
         profile = patched.json()["data"]["profile"]
         assert profile["age"] == 34
+        assert profile["consent_retention"] is True
         assert "notes" not in patched.json()["data"]["profile"]
         assert email not in patched.text
         assert "123412341234" not in patched.text
+
+        withdrawn = client.patch(
+            "/api/v1/auth/profile",
+            headers=headers,
+            json={"consent_retention": False},
+        )
+        assert withdrawn.status_code == 200
+        withdrawn_profile = withdrawn.json()["data"]["profile"]
+        assert withdrawn_profile["consent_retention"] is False
+        assert withdrawn_profile["age"] is None
+        assert withdrawn_profile["income"] is None
+
+        restored = client.patch(
+            "/api/v1/auth/profile",
+            headers=headers,
+            json={
+                "consent_retention": True,
+                "age": 34,
+                "income": 120000,
+                "notes": "aadhaar 123412341234 keep",
+            },
+        )
+        assert restored.status_code == 200
 
         user_id = uuid.UUID(str(data["user"]["id"]))
         session = SessionLocal()
         try:
             session.add(Alert(user_id=user_id, alert_type="NEW_SCHEME_MATCH", payload={}))
             session.add(ActionDossier(user_id=user_id, status="queued", scheme_name="purge-check"))
+            scheme_id = session.scalar(select(Scheme.id).limit(1))
+            if scheme_id is not None:
+                session.add(Application(user_id=user_id, scheme_id=scheme_id, stage="Submitted"))
             session.commit()
             stored_notes = session.scalar(select(UserProfile.notes).where(UserProfile.user_id == user_id))
             assert stored_notes is not None
@@ -226,6 +269,7 @@ def test_profile_update_and_account_purge_cascade(client: TestClient) -> None:
             assert session.scalar(select(UserProfile).where(UserProfile.user_id == user_id)) is None
             assert session.scalar(select(Alert).where(Alert.user_id == user_id)) is None
             assert session.scalar(select(ActionDossier).where(ActionDossier.user_id == user_id)) is None
+            assert session.scalar(select(Application).where(Application.user_id == user_id)) is None
             audit = session.scalars(
                 select(AuditLog).where(AuditLog.action == "profile_purge", AuditLog.entity_id == str(user_id))
             ).all()

@@ -26,8 +26,10 @@ def list_schemes(
     db: DbSession,
     category: str | None = Query(default=None),
     q: str | None = Query(default=None),
+    limit: int = Query(default=100, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
 ) -> dict:
-    payload = SchemeCatalogService(db).list_payload(category=category, q=q)
+    payload = SchemeCatalogService(db).list_payload(category=category, q=q, limit=limit, offset=offset)
     return ok(payload, _request_id(request))
 
 

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import date
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, Request
@@ -55,8 +56,14 @@ def compare_versions(
     db: DbSession,
     from_version: str | None = Query(default=None),
     to_version: str | None = Query(default=None),
+    as_of: date | None = Query(default=None),
 ) -> dict:
     return ok(
-        PolicyCatalogService(db).compare(policy_id, from_version=from_version, to_version=to_version),
+        PolicyCatalogService(db).compare(
+            policy_id,
+            from_version=from_version,
+            to_version=to_version,
+            as_of=as_of,
+        ),
         _request_id(request),
     )

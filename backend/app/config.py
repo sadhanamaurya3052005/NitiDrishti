@@ -63,7 +63,10 @@ class Settings(BaseSettings):
     # ── Server ───────────────────────────────────────────────
     backend_host: str = "0.0.0.0"
     backend_port: int = 8000
-    cors_origins: str = "http://localhost:3000,http://localhost:3001,http://127.0.0.1:3001"
+    cors_origins: str = (
+        "http://localhost:3000,http://localhost:3001,"
+        "http://127.0.0.1:3000,http://127.0.0.1:3001"
+    )
 
     # ── Database ─────────────────────────────────────────────
     postgres_user: str = "nitidrishti"
@@ -99,6 +102,19 @@ class Settings(BaseSettings):
     )
     ingest_interval_hours: int = 24
     raw_storage_path: str = "./storage/raw"
+
+    # Feature flags — OCR runs only when FEATURE_AI_EXTRACTION is true *and* Tesseract exists.
+    feature_ai_extraction: bool = False
+    feature_disaster_module: bool = False
+    feature_what_if_api: bool = True
+    tesseract_cmd: str = "tesseract"
+    ocr_languages: str = "eng+hin"
+    ocr_min_text_chars: int = 12
+    ocr_max_pages: int = 4
+    rate_limit_enabled: bool = True
+    rate_limit_login_per_minute: int = 20
+    rate_limit_eligibility_per_minute: int = 60
+    rate_limit_search_per_minute: int = 60
 
     # Operator seed — placeholders in .env.example only. Register stays CITIZEN.
     bootstrap_officer_email: str = ""
@@ -153,6 +169,13 @@ class Settings(BaseSettings):
     @property
     def ingestion_allowed_domain_list(self) -> list[str]:
         return [item.strip().lower() for item in self.ingestion_allowed_domains.split(",") if item.strip()]
+
+    @computed_field  # type: ignore[prop-decorator]
+    @property
+    def rate_limit_active(self) -> bool:
+        if self.app_env == "testing":
+            return False
+        return bool(self.rate_limit_enabled)
 
 
 @lru_cache

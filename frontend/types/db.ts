@@ -60,7 +60,8 @@ export type AuditAction =
   | 'profile_update'
   | 'profile_purge'
   | 'ingestion_run'
-  | 'review_approve';
+  | 'review_approve'
+  | 'application_submit';
 
 export interface Timestamps {
   created_at: string;
@@ -337,6 +338,7 @@ export const PRODUCTION_TABLES = [
   'alerts',
   'action_dossiers',
   'audit_logs',
+  'applications',
 ] as const;
 
 export type ProductionTable = (typeof PRODUCTION_TABLES)[number];

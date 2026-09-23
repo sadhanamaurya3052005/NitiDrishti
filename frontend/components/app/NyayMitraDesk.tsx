@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 
 import { EmptyState } from '@/components/shared/EmptyState';
+import { GazetteOcrStrip } from '@/components/app/GazetteOcrStrip';
 import { MetricBadge } from '@/components/ui/MetricBadge';
 import { useLocale } from '@/components/providers/LocaleProvider';
 import {
@@ -13,14 +14,77 @@ import {
   type PolicyClauseItem,
   type PolicyCompare,
   type PolicySummary,
+  type PolicyVersionSummary,
 } from '@/lib/blockE';
+import type { Locale } from '@/lib/config';
 
 type PolicyDetail = PolicySummary & { clauses: PolicyClauseItem[] };
 
+function sourceHost(url?: string | null): string | null {
+  if (!url) return null;
+  try {
+    return new URL(url).hostname.replace(/^www\./, '');
+  } catch {
+    return url.replace(/^https?:\/\//, '');
+  }
+}
+
+function formatIsoDate(value: string | null | undefined, locale: Locale): string | null {
+  if (!value) return null;
+  const parsed = new Date(`${value}T00:00:00`);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return parsed.toLocaleDateString(locale === 'hi' ? 'hi-IN' : 'en-IN', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  });
+}
+
+function VersionStamp({
+  version,
+  asOf,
+  locale,
+  asOfLabel,
+  asOfCurrent,
+  effectiveLabel,
+}: {
+  version: PolicyVersionSummary | null | undefined;
+  asOf?: string | null;
+  locale: Locale;
+  asOfLabel: string;
+  asOfCurrent: string;
+  effectiveLabel: string;
+}) {
+  if (!version) return null;
+  const host = sourceHost(version.source_url);
+  const from = formatIsoDate(version.effective_from, locale);
+  const to = formatIsoDate(version.effective_to, locale);
+  const window = from && to ? `${from} → ${to}` : from || to;
+  const asOn = formatIsoDate(asOf, locale) ?? asOfCurrent;
+  return (
+    <p className="mt-2 text-[11px] text-ink-muted">
+      v{version.version_number}
+      {version.gazette_ref ? ` · ${version.gazette_ref}` : ''}
+      {' · '}
+      {asOfLabel} {asOn}
+      {window ? ` · ${effectiveLabel} ${window}` : ''}
+      {host && version.source_url ? (
+        <>
+          {' · '}
+          <a href={version.source_url} target="_blank" rel="noreferrer" className="font-semibold text-saffron">
+            {host}
+          </a>
+        </>
+      ) : null}
+    </p>
+  );
+}
+
 export function NyayMitraDesk() {
   const { locale, desk, app } = useLocale();
-  const [fileName, setFileName] = useState<string | null>(null);
   const [policies, setPolicies] = useState<PolicySummary[] | null>(null);
+  const [policyId, setPolicyId] = useState('');
+  const [asOf, setAsOf] = useState('');
   const [fromDetail, setFromDetail] = useState<PolicyDetail | null>(null);
   const [toDetail, setToDetail] = useState<PolicyDetail | null>(null);
   const [compare, setCompare] = useState<PolicyCompare | null>(null);
@@ -29,43 +93,63 @@ export function NyayMitraDesk() {
   useEffect(() => {
     let cancelled = false;
     void getPolicies()
-      .then(async (data) => {
+      .then((data) => {
         if (cancelled) return;
         setPolicies(data.policies);
-        const preferred =
-          data.policies.find((item) => (item.version_number ?? 0) >= 2) ?? data.policies[0];
-        if (!preferred) return;
-        const [loaded, diff] = await Promise.all([
-          getPolicy(preferred.id)
-            .then((payload) => payload.policy)
-            .catch(() => null),
-          comparePolicy(preferred.id).catch(() => null),
-        ]);
+        setPolicyId((current) => {
+          if (current && data.policies.some((item) => item.id === current)) return current;
+          const preferred =
+            data.policies.find((item) => (item.version_number ?? 0) >= 2) ?? data.policies[0];
+          return preferred?.id ?? '';
+        });
+      })
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        setError(err instanceof Error ? err.message : 'unavailable');
+        setPolicies([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!policyId) return;
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      void Promise.all([
+        getPolicy(policyId)
+          .then((payload) => payload.policy)
+          .catch(() => null),
+        comparePolicy(policyId, asOf || null).catch(() => null),
+      ]).then(async ([loaded, diff]) => {
         if (cancelled) return;
         setCompare(diff);
-        const current: PolicyDetail | null = loaded
-          ? { ...loaded, clauses: loaded.clauses }
-          : { ...preferred, clauses: [] };
-        let previous: PolicyDetail | null = null;
+        const base = loaded ?? policies?.find((item) => item.id === policyId) ?? null;
+        if (!base) {
+          setFromDetail(null);
+          setToDetail(null);
+          return;
+        }
+        const current: PolicyDetail = { ...base, clauses: loaded?.clauses ?? [] };
         if (diff?.from_version && diff.to_version) {
           const [fromClauses, toClauses] = await Promise.all([
-            getPolicyVersionClauses(preferred.id, diff.from_version.id)
+            getPolicyVersionClauses(policyId, diff.from_version.id)
               .then((payload) => payload.clauses)
               .catch(() => []),
-            getPolicyVersionClauses(preferred.id, diff.to_version.id)
+            getPolicyVersionClauses(policyId, diff.to_version.id)
               .then((payload) => payload.clauses)
               .catch(() => current.clauses),
           ]);
           if (cancelled) return;
-          previous = {
-            ...preferred,
+          setFromDetail({
+            ...base,
             source_url: diff.from_version.source_url,
             retrieved_at: diff.from_version.retrieved_at,
             gazette_ref: diff.from_version.gazette_ref,
             version_number: diff.from_version.version_number,
             clauses: fromClauses,
-          };
-          setFromDetail(previous);
+          });
           setToDetail({
             ...current,
             source_url: diff.to_version.source_url,
@@ -78,20 +162,18 @@ export function NyayMitraDesk() {
         }
         setFromDetail(null);
         setToDetail(current);
-      })
-      .catch((err: unknown) => {
-        if (cancelled) return;
-        setError(err instanceof Error ? err.message : 'unavailable');
-        setPolicies([]);
       });
+    }, 280);
     return () => {
       cancelled = true;
+      window.clearTimeout(timer);
     };
-  }, []);
+  }, [policyId, asOf, policies]);
 
   const loading = policies == null;
   const left = fromDetail;
   const right = toDetail ?? fromDetail;
+  const selected = policies?.find((item) => item.id === policyId);
 
   return (
     <div className="mx-auto w-full max-w-5xl">
@@ -104,19 +186,36 @@ export function NyayMitraDesk() {
         <MetricBadge label="Nyay-Mitra" note={policies ? String(policies.length) : undefined} />
       </header>
 
-      <label className="nd-card mt-8 flex cursor-pointer flex-col items-center justify-center px-6 py-12 text-center">
-        <input
-          type="file"
-          accept="application/pdf,image/*"
-          className="sr-only"
-          onChange={(event) => {
-            const file = event.target.files?.[0];
-            setFileName(file?.name ?? null);
-          }}
-        />
-        <p className="text-sm font-semibold text-ink">{desk.nyay.drop}</p>
-        {fileName ? <p className="mt-3 text-xs text-saffron">{fileName}</p> : null}
-      </label>
+      {policies && policies.length > 0 ? (
+        <div className="mt-6 grid gap-4 sm:grid-cols-2">
+          <label className="block text-xs font-semibold text-ink-muted">
+            {desk.nyay.pick}
+            <select
+              value={policyId}
+              onChange={(event) => setPolicyId(event.target.value)}
+              className="mt-1.5 w-full rounded-xl border border-line bg-surface px-3 py-2 text-sm font-normal text-ink"
+            >
+              {policies.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {locale === 'hi' ? item.title_hi || item.title : item.title}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block text-xs font-semibold text-ink-muted">
+            {desk.nyay.asOf}
+            <input
+              type="date"
+              value={asOf}
+              onChange={(event) => setAsOf(event.target.value)}
+              className="mt-1.5 w-full rounded-xl border border-line bg-surface px-3 py-2 text-sm font-normal text-ink"
+            />
+          </label>
+        </div>
+      ) : null}
+
+      <p className="mt-8 text-xs text-ink-muted">{desk.nyay.drop}</p>
+      <GazetteOcrStrip />
 
       <div className="mt-4 grid gap-4 md:grid-cols-2">
         {loading ? (
@@ -145,9 +244,15 @@ export function NyayMitraDesk() {
                     : 'Only one version ingested'}
               </h2>
               <p className="mt-2 text-sm text-ink-soft">{left?.issuing_body ?? right.issuing_body}</p>
-              <p className="mt-2 text-sm text-ink-soft">
-                {compare?.from_version?.source_url ?? left?.source_url ?? desk.nyay.hint}
-              </p>
+              <VersionStamp
+                version={compare?.from_version}
+                asOf={compare?.asOf ?? (asOf || null)}
+                locale={locale}
+                asOfLabel={desk.nyay.asOf}
+                asOfCurrent={desk.nyay.asOfCurrent}
+                effectiveLabel={desk.nyay.effective}
+              />
+              {!compare?.from_version ? <p className="mt-2 text-sm text-ink-soft">{desk.nyay.hint}</p> : null}
               {left?.clauses.length ? (
                 <ul className="mt-3 space-y-2 text-sm text-ink-soft">
                   {left.clauses.slice(0, 4).map((clause) => (
@@ -168,16 +273,14 @@ export function NyayMitraDesk() {
                     : right.title}
               </h2>
               <p className="mt-2 text-sm text-ink-soft">{right.issuing_body}</p>
-              {right.source_url ? (
-                <p className="mt-2 text-[11px] text-ink-muted">
-                  <a href={right.source_url} className="underline" target="_blank" rel="noreferrer">
-                    {right.source_url}
-                  </a>
-                  {right.retrieved_at
-                    ? ` · ${new Date(right.retrieved_at).toLocaleDateString(locale === 'hi' ? 'hi-IN' : 'en-IN')}`
-                    : ''}
-                </p>
-              ) : null}
+              <VersionStamp
+                version={compare?.to_version}
+                asOf={null}
+                locale={locale}
+                asOfLabel={desk.nyay.asOf}
+                asOfCurrent={desk.nyay.asOfCurrent}
+                effectiveLabel={desk.nyay.effective}
+              />
               {right.clauses.length ? (
                 <ul className="mt-3 space-y-2 text-sm text-ink-soft">
                   {right.clauses.slice(0, 4).map((clause) => (
@@ -191,6 +294,7 @@ export function NyayMitraDesk() {
           </>
         )}
       </div>
+      {compare?.note ? <p className="mt-4 text-xs text-ink-muted">{compare.note}</p> : null}
       {compare?.changes.length ? (
         <ul className="mt-4 space-y-2">
           {compare.changes.slice(0, 8).map((change, index) => (
@@ -202,6 +306,11 @@ export function NyayMitraDesk() {
         </ul>
       ) : policies?.length ? (
         <p className="mt-4 text-xs text-ink-muted">{desk.nyay.hint}</p>
+      ) : null}
+      {selected?.code ? (
+        <p className="mt-3 text-[11px] text-ink-muted">
+          {desk.nyay.gazette} · {selected.code}
+        </p>
       ) : null}
     </div>
   );

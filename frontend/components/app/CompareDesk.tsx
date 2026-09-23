@@ -1,13 +1,13 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 
+import { GazetteEvidence } from '@/components/site/GazetteEvidence';
 import { MetricBadge } from '@/components/ui/MetricBadge';
 import { useExperience } from '@/components/providers/ExperienceProvider';
 import { useLocale } from '@/components/providers/LocaleProvider';
 import { useSchemes } from '@/hooks/useSchemes';
-import { compareSchemes } from '@/lib/api';
-import { evaluateScheme, type SchemeEvaluation } from '@/lib/schemes/evaluate';
+import { useServerCompare } from '@/hooks/useServerEvaluations';
 
 export function CompareDesk() {
   const { desk, locale, home } = useLocale();
@@ -15,7 +15,7 @@ export function CompareDesk() {
   const { schemes, loading, error } = useSchemes();
   const [leftId, setLeftId] = useState('');
   const [rightId, setRightId] = useState('');
-  const [serverEvals, setServerEvals] = useState<Record<string, SchemeEvaluation> | null>(null);
+  const { byId, status: engineStatus } = useServerCompare(leftId, rightId, profile);
 
   useEffect(() => {
     if (!schemes.length) return;
@@ -23,46 +23,8 @@ export function CompareDesk() {
     setRightId((current) => current || schemes[1]?.id || schemes[0]?.id || '');
   }, [schemes]);
 
-  const left = schemes.find((item) => item.id === leftId);
-  const right = schemes.find((item) => item.id === rightId);
-  const leftLocal = useMemo(() => (left ? evaluateScheme(left, profile) : null), [left, profile]);
-  const rightLocal = useMemo(() => (right ? evaluateScheme(right, profile) : null), [profile, right]);
-
-  useEffect(() => {
-    if (!leftId || !rightId || leftId === rightId) {
-      setServerEvals(null);
-      return;
-    }
-    let cancelled = false;
-    void compareSchemes({
-      scheme_ids: [leftId, rightId],
-      profile: {
-        age: profile.age,
-        income: profile.income,
-        land_hectares: profile.landHectares,
-        gender: profile.gender,
-        category: profile.category,
-        occupation: profile.occupation,
-      },
-    })
-      .then((payload) => {
-        if (cancelled) return;
-        const next: Record<string, SchemeEvaluation> = {};
-        for (const item of payload.items) {
-          next[item.evaluation.schemeId] = item.evaluation;
-        }
-        setServerEvals(next);
-      })
-      .catch(() => {
-        if (!cancelled) setServerEvals(null);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [leftId, profile, rightId]);
-
-  const leftEval = (leftId && serverEvals?.[leftId]) || leftLocal;
-  const rightEval = (rightId && serverEvals?.[rightId]) || rightLocal;
+  const leftEval = leftId ? byId[leftId] ?? null : null;
+  const rightEval = rightId ? byId[rightId] ?? null : null;
 
   const select = (value: string, setter: (id: string) => void) => (
     <select
@@ -89,6 +51,9 @@ export function CompareDesk() {
         <MetricBadge label="Comparison" />
       </header>
 
+      {engineStatus === 'error' ? (
+        <p className="nd-card mt-8 px-5 py-4 text-center text-sm text-ink-muted">{desk.eligibility.engineDown}</p>
+      ) : null}
       {error ? (
         <p className="nd-card mt-8 px-5 py-10 text-center text-sm text-ink-muted">
           {locale === 'hi' ? 'सूची अभी उपलब्ध नहीं।' : 'Catalog is unavailable right now.'}
@@ -107,6 +72,12 @@ export function CompareDesk() {
               {desk.compare.left}
               {select(leftId, setLeftId)}
             </label>
+            <GazetteEvidence
+              evaluation={leftEval}
+              fallbackUrl={schemes.find((item) => item.id === leftId)?.sourceUrl}
+              compact
+              className="mt-3"
+            />
             <ul className="mt-4 space-y-2 text-sm">
               {leftEval?.rules.map((rule) => (
                 <li key={rule.id}>
@@ -120,6 +91,12 @@ export function CompareDesk() {
               {desk.compare.right}
               {select(rightId, setRightId)}
             </label>
+            <GazetteEvidence
+              evaluation={rightEval}
+              fallbackUrl={schemes.find((item) => item.id === rightId)?.sourceUrl}
+              compact
+              className="mt-3"
+            />
             <ul className="mt-4 space-y-2 text-sm">
               {rightEval?.rules.map((rule) => (
                 <li key={rule.id}>

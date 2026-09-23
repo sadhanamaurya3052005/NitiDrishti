@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.repositories.ingestion import IngestionLogRepository, SourceRepository
 
 
@@ -30,3 +31,16 @@ class SourceStatusService:
                 }
             )
         return items
+
+    def snapshot(self) -> dict:
+        try:
+            hours = max(1, int(settings.ingest_interval_hours))
+        except (TypeError, ValueError):
+            hours = 24
+        return {
+            "sources": self.list_status(),
+            "live_feed": False,
+            "scheduler_enabled": bool(settings.ingest_scheduler_enabled),
+            "interval_hours": hours,
+            "note": "Batch refresh of official sources. Not a live government feed.",
+        }

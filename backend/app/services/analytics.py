@@ -17,6 +17,7 @@ from app.models.opportunities import Internship, Job, Scholarship
 from app.models.schemes import Scheme
 from app.repositories.alerts import AlertRepository
 from app.repositories.analytics import AnalyticsRepository
+from app.repositories.applications import ApplicationRepository
 from app.repositories.opportunities import (
     InternshipRepository,
     JobRepository,
@@ -25,6 +26,7 @@ from app.repositories.opportunities import (
 from app.repositories.policies import PolicyRepository, PolicyVersionRepository
 from app.repositories.schemes import SchemeRepository
 from app.repositories.users import UserRepository
+from app.services.applications import funnel_payload
 
 FUNNEL_STAGES = (
     "Discovered",
@@ -69,6 +71,7 @@ class AnalyticsService:
         self.policy_versions = PolicyVersionRepository(session)
         self.users = UserRepository(session)
         self.alerts = AlertRepository(session)
+        self.applications = ApplicationRepository(session)
 
     def summary(self) -> dict:
         postgis = self.analytics.extension_enabled("postgis")
@@ -90,16 +93,16 @@ class AnalyticsService:
             },
             "postgis_enabled": postgis,
             "pgvector_enabled": pgvector,
-            "application_rows": False,
+            "application_rows": self.applications.exists_any(),
             "map": {
-                "available": postgis,
-                "reason": None if postgis else "PostGIS is not installed. No district geometry is served.",
+                "available": True,
+                "reason": "Bundled TopoJSON name-join. PostGIS does not serve this map.",
             },
             "district_analytics": {
                 "endpoint": "/api/v1/analytics/districts",
                 "geometry": "Client GeoJSON joined by district name and state. PostGIS is not used.",
             },
-            "funnel": [{"stage": stage, "count": None} for stage in FUNNEL_STAGES],
+            "funnel": funnel_payload(self.applications.stage_counts(), has_rows=self.applications.exists_any()),
         }
 
     def csc_summary(self) -> dict:
@@ -112,9 +115,9 @@ class AnalyticsService:
         data = self.summary()
         data["workspace"] = "welfare"
         data["note"] = (
-            "Funnel counts stay null until official application rows exist. "
+            "Funnel counts come from application rows when they exist; otherwise they stay null. "
             "No beneficiary or vacancy figures are invented. "
-            "District choropleth uses /api/v1/analytics/districts."
+            "District choropleth uses bundled TopoJSON, not PostGIS."
         )
         return data
 
@@ -235,7 +238,7 @@ class AnalyticsService:
             ],
             "districts": districts_out,
             "national_schemes": national_schemes,
-            "application_rows": False,
+            "application_rows": self.applications.exists_any(),
             "geometry": "Join client GeoJSON by district name and state name. PostGIS is not used.",
         }
 
@@ -263,8 +266,16 @@ class AnalyticsService:
             "target_population": None,
             "enrolled": None,
             "population_note": _NO_REGISTRY,
-            "application_funnel": [{"stage": stage, "count": None} for stage in FUNNEL_STAGES],
-            "application_funnel_note": _NO_PIPELINE,
+            "application_funnel": funnel_payload(
+                self.applications.stage_counts(district_id=district.id),
+                has_rows=self.applications.exists_any(),
+            ),
+            "application_funnel_note": (
+                None
+                if self.applications.exists_any()
+                else _NO_PIPELINE
+            )
+            or "Counts are submitted application rows for this district. DBT is not auto-written.",
             "dossier_stages": [
                 {"stage": "queued", "count": dossier["queued"]},
                 {"stage": "ready", "count": dossier["ready"]},

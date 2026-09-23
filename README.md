@@ -8,7 +8,6 @@ ingestion pipeline**, understands them with AI/NLP, verifies and versions them, 
 citizen exactly what they qualify for — with the reason, the source and the verification date.
 
 > No third-party or paid data API is used to obtain government information.
-> See `PROJECT_RULES.md`, Rule 1.
 
 ---
 
@@ -16,10 +15,10 @@ citizen exactly what they qualify for — with the reason, the source and the ve
 
 | | |
 |---|---|
-| Status | Production-ready core — see `TASKS.md` for backlog |
-| Frontend | Next.js App Router + TypeScript + Tailwind + Framer Motion — design system, cinematic emblem transition, bilingual landing experience |
-| Backend | FastAPI + SQLAlchemy + Alembic — configuration, structured logging, `/health`, `/api/version` |
-| Database | PostgreSQL 16 + PostGIS (native / managed). No Docker. Schema via Alembic. |
+| Status | Freeze tag **`v1.0-final`** — QA / security / data audit starts here. No major features during the audit. |
+| Frontend | Next.js 15 App Router + TypeScript + Tailwind + Framer Motion |
+| Backend | FastAPI + SQLAlchemy + Alembic — `/health`, `/ready`, `/api/version` |
+| Database | Native PostgreSQL (this machine: 18). No Docker. Schema via Alembic. `pg_trgm` + `unaccent` required; PostGIS optional (maps use bundled TopoJSON). |
 
 ---
 
@@ -28,93 +27,91 @@ citizen exactly what they qualify for — with the reason, the source and the ve
 ```
 NitiDrishti/
 ├── frontend/          Next.js application
-│   ├── app/           routes (App Router)
-│   ├── components/    brand, site sections, motion, ui, providers
-│   ├── lib/           api client, config, motion vocabulary, i18n, accents
-│   └── types/         shared TypeScript contracts
-├── backend/           FastAPI application
-│   ├── app/
-│   │   ├── api/       routers (HTTP layer only)
-│   │   ├── core/      database, logging
-│   │   ├── models/     ORM models
-│   │   ├── schemas/    Pydantic contracts
-│   │   ├── services/   business logic
-│   │   └── repositories/  data access
-│   ├── alembic/       migrations
-│   └── tests/
+├── backend/           FastAPI + Alembic + pytest
+│   └── app/services/
+│       ├── ingestion/     bronze → silver → gold pipeline (not a data_pipeline/ tree)
+│       └── eligibility/   AST engine (not a rule_engine/ tree)
 ├── database/init/     one-time SQL (extensions only)
-├── storage/           raw + processed government documents (git-ignored)
-├── docs/              architecture and engineering contracts
-├── PROJECT_RULES.md   binding engineering rules
-└── TASKS.md           product status and backlog
+├── docs/              architecture, API, deploy, security
+├── scripts/           native pg_dump backup drill
+├── storage/           raw snapshots + backups (git-ignored)
+├── .env.example
+├── .gitignore
+└── README.md
 ```
+
+There is **no** top-level `data_pipeline/` or `rule_engine/` folder. Those stages live in `backend/app/services/`. `.env` is git-ignored.
 
 ---
 
-## Local setup
+## Local setup (VS Code terminal)
+
+Open the repo in VS Code (`D:\NitiDrishti`). Use **two terminals** (`` Ctrl+` `` then the `+` button). PostgreSQL Windows service must be **Running**. Docker is not used.
 
 ### 0. Prerequisites
 
-Node.js 20+, Python 3.11+, PostgreSQL 16 + PostGIS (local install or managed), Git.
+Node.js 20+, Python 3.11+, native PostgreSQL on `localhost:5432`, Git.
 
-### 1. Environment
+### 1. Environment (once)
 
 ```powershell
 Copy-Item .env.example .env
 Copy-Item frontend\.env.local.example frontend\.env.local
 ```
 
-Then edit `.env` and set a local `POSTGRES_PASSWORD`.
+Edit `.env`: set `POSTGRES_PASSWORD`, a long `JWT_SECRET_KEY`, and `POSTGRES_DB` to the database you actually created (template name is `nitidrishti_dev`).
 
-### 2. Database
+### 2. Database (once)
 
-**Option A — local PostgreSQL 16 + PostGIS (preferred for geo analytics).**
-Install PostgreSQL 16, enable PostGIS, then create:
-
-- database: `nitidrishti_dev`
-- user: `nitidrishti`
-- host: `localhost:5432`
-
-Put those values in `.env` (`POSTGRES_*`). Then enable extensions once:
-
-```powershell
-cd backend
-.\.venv\Scripts\Activate.ps1
-python -m scripts.init_extensions
-```
-
-**Option B — managed PostgreSQL.** Create a project (for example Neon), copy its
-connection string, and put it in `.env`:
-
-```
-DATABASE_URL=postgresql://user:password@ep-xxxx.region.aws.neon.tech/nitidrishti
-```
-
-The driver prefix and `sslmode` are added automatically. Then run the same
-`python -m scripts.init_extensions` command.
-
-### 3. Backend
+Create a database that matches `.env` (`POSTGRES_DB` / `POSTGRES_USER`). Then from `backend/`:
 
 ```powershell
 cd backend
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
+python -m scripts.init_extensions
+alembic upgrade head
+python -m scripts.seed_reference
+python -m scripts.bootstrap_operators
+```
+
+`pg_trgm` and `unaccent` are required. PostGIS is optional (GIS uses client TopoJSON).
+
+If `Activate.ps1` is blocked once: `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`
+
+### 3. Every day — Terminal A (API)
+
+```powershell
+cd backend
+.\.venv\Scripts\Activate.ps1
 uvicorn app.main:app --reload
 ```
 
-Verify: <http://localhost:8000/health> and <http://localhost:8000/docs>
+Verify: <http://127.0.0.1:8000/health> and <http://127.0.0.1:8000/docs>
 
-### 4. Frontend
+### 4. Every day — Terminal B (UI)
+
+First time: `cd frontend; npm install`
+
+Every day:
 
 ```powershell
 cd frontend
-npm install
 npm run dev
 ```
 
-Open <http://localhost:3000>. The emblem boot sequence plays once per browser
-session and hands the logo over to the header; press **Skip** to bypass it.
+Open <http://localhost:3000> (if port 3000 is busy, Next uses **3001**; CORS allows both). Stop with **Ctrl+C** in each terminal.
+
+After pulling schema changes:
+
+```powershell
+cd backend
+.\.venv\Scripts\Activate.ps1
+alembic upgrade head
+```
+
+The emblem boot sequence plays once per browser session; press **Skip** to bypass it.
 
 Routes available now:
 
@@ -162,6 +159,24 @@ cd backend; pytest; ruff check .
 cd frontend; npm run typecheck; npm run lint; npm run build
 ```
 
+### Five-minute demos (API must be running)
+
+```powershell
+cd backend
+.\.venv\Scripts\Activate.ps1
+python -m scripts.demo_citizen_ast
+python -m scripts.demo_officer_hitl
+python -m scripts.demo_nyay_gazette
+```
+
+| Script | What it proves |
+|---|---|
+| `demo_citizen_ast` | Eligibility status comes from Postgres AST (`ELIGIBLE` / `PARTIAL_INFO` / `INELIGIBLE`), not an LLM vote |
+| `demo_officer_hitl` | Guest cannot read the review queue; an officer token lists `needs_review` rows |
+| `demo_nyay_gazette` | Policy compare echoes `as_of` and ingested version/gazette refs |
+
+Officer HITL needs `ND_OFFICER_EMAIL` / `ND_OFFICER_PASSWORD` (from `bootstrap_operators`). Guest 401 is still a successful demo.
+
 ---
 
 ## Where the data comes from
@@ -169,18 +184,41 @@ cd frontend; npm run typecheck; npm run lint; npm run build
 | Source form | How it is read |
 |---|---|
 | Static HTML pages | requests + BeautifulSoup |
-| JavaScript-rendered pages | Playwright |
-| Official PDFs | PyMuPDF |
-| Scanned PDFs | OCR (Tesseract, Hindi + English) |
-| CSV / Excel / XML / JSON | Pandas / stdlib parsers |
-| Restricted data only | official government API, where no permitted method exists |
+| JavaScript-rendered pages | Playwright (optional; skipped if not installed) |
+| Official PDFs | pypdf text extract |
+| CSV / Excel / JSON | openpyxl / stdlib parsers |
 
 Every stored record keeps its source URL, source document, retrieval time and
 version number, so anything shown to a citizen can be traced back.
 
 ---
 
+## Backup drill (native PostgreSQL 18)
+
+Docker is not used. `pg_dump` must be on PATH (or under `C:\Program Files\PostgreSQL\18\bin`).
+Passwords stay in `POSTGRES_PASSWORD` / `PGPASSWORD` and are never printed.
+
+```powershell
+cd D:\NitiDrishti
+if ($env:CURL_CA_BUNDLE) { Remove-Item Env:CURL_CA_BUNDLE }
+powershell -File scripts\backup-drill.ps1 -DryRun
+powershell -File scripts\backup-drill.ps1 -RestoreDb nitidrishti_verify
+```
+
+Restore-verify prints `alembic_current` and table counts. It does not invent KPIs.
+
+Suggested remote layout (not a live portal): Vercel for `frontend/`, a VM running
+`uvicorn app.main:app`, native Postgres — see `docs/deploy.md`. PostGIS is not required.
+
+---
+
 ## Status
 
-Core platform, auth, ingestion connectors, citizen tools, and honest analytics
-are in place. Open work (catalogue coverage, jobs, GIS) is listed in `TASKS.md`.
+Academic 2026–27 SIH260092 — not a live sarkari portal. Freeze tag `v1.0-final`.
+
+**Known limitations (do not over-claim in viva):** not a ministry apply API; not Airflow;
+AI/NLP extraction is not live (`FEATURE_AI_EXTRACTION` default false); PostGIS is not serving
+the map; offline is a catalog snapshot, not a full PWA; disaster DSS is catalog rows only
+and default off; guest writes zero server PII rows.
+
+Live catalog / pipeline sizes: `GET /api/v1/analytics/summary` and `GET /api/v1/pipeline`.

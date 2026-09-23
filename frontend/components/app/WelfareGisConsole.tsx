@@ -4,7 +4,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { geoBounds, geoCentroid } from 'd3-geo';
 import { MapPin, Radio } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { ComposableMap, Geographies, Geography, ZoomableGroup } from 'react-simple-maps';
+import { ComposableMap, Geographies, Geography } from 'react-simple-maps';
 import { feature } from 'topojson-client';
 import type { FeatureCollection, Geometry } from 'geojson';
 import type { GeometryCollection, Topology } from 'topojson-specification';
@@ -34,7 +34,7 @@ import { ApiError } from '@/lib/api';
 import { easings } from '@/lib/motion';
 
 const METRICS: { id: DistrictMetric; en: string; hi: string }[] = [
-  { id: 'coverage_saturation', en: 'Coverage saturation', hi: 'कवरेज संतृप्ति' },
+  { id: 'coverage_saturation', en: 'Catalog share', hi: 'कैटलॉग हिस्सा' },
   { id: 'application_dropoff', en: 'Application drop-off', hi: 'आवेदन ड्रॉप-ऑफ' },
   { id: 'cohort_gap', en: 'Gender/caste cohort gap', hi: 'लिंग/जाति अंतर' },
   { id: 'disbursement_velocity', en: 'Fund disbursement velocity', hi: 'निधि वितरण गति' },
@@ -70,7 +70,7 @@ function viewFor(collection: FeatureCollection<Geometry> | null): { center: [num
 }
 
 export function WelfareGisConsole() {
-  const { locale } = useLocale();
+  const { locale, desk } = useLocale();
   const { session } = useExperience();
   const reduceMotion = useReducedMotion();
   const hi = locale === 'hi';
@@ -210,6 +210,7 @@ export function WelfareGisConsole() {
           <div>
             <p className="nd-eyebrow">{hi ? 'राष्ट्रीय प्रशासनिक इंजन' : 'National administrative engine'}</p>
             <h2 className="text-sm font-semibold text-ink">{hi ? 'ज़िला कोरोप्लेथ' : 'District choropleth'}</h2>
+            <p className="mt-1 max-w-xl text-[11px] text-ink-muted">{desk.analytics.map}</p>
           </div>
           <label className="text-xs font-medium text-ink-soft">
             <span className="sr-only">{hi ? 'राज्य चुनें' : 'Select state'}</span>
@@ -264,7 +265,7 @@ export function WelfareGisConsole() {
               : 'No telemetry yet for this metric. Districts stay grey — no invented percentages.'}
         </p>
 
-        <div className="relative min-h-[360px] bg-canvas-deep">
+        <div className="relative min-h-[360px] overflow-hidden bg-canvas-deep">
           {loading ? (
             <div className="grid h-[360px] place-items-center p-6" aria-busy>
               <div className="nd-skeleton h-full min-h-[280px] w-full" />
@@ -293,7 +294,6 @@ export function WelfareGisConsole() {
               role="img"
               aria-label={hi ? 'भारत के ज़िलों का मानचित्र' : 'India district map'}
             >
-              <ZoomableGroup zoom={1} filterZoomEvent={reduceMotion ? () => false : undefined}>
                 <Geographies geography={filtered}>
                   {({ geographies }) =>
                     geographies.map((geo) => {
@@ -345,16 +345,17 @@ export function WelfareGisConsole() {
                     })
                   }
                 </Geographies>
-              </ZoomableGroup>
             </ComposableMap>
           )}
 
-          <div className="pointer-events-none absolute bottom-3 left-3 flex gap-2 text-[10px] font-semibold">
-            <span className="rounded-pill bg-mint px-2 py-0.5 text-white">≥75%</span>
+          <div className="pointer-events-none absolute bottom-3 left-3 flex flex-wrap gap-2 text-[10px] font-semibold">
+            <span className="rounded-pill bg-mint px-2 py-0.5 text-white">
+              {hi ? 'कैटलॉग ≥75%' : 'catalog ≥75%'}
+            </span>
             <span className="rounded-pill bg-amber px-2 py-0.5 text-white">45–74%</span>
             <span className="rounded-pill bg-rose px-2 py-0.5 text-white">&lt;45%</span>
             <span className="rounded-pill border border-line bg-surface px-2 py-0.5 text-ink-muted">
-              {hi ? 'कोई टेलीमेट्री नहीं' : 'No telemetry'}
+              {hi ? 'कोई पंक्ति नहीं' : 'no catalog row'}
             </span>
           </div>
         </div>
@@ -408,6 +409,10 @@ export function WelfareGisConsole() {
             <p className="text-ink-muted">{hover.state}</p>
             {hover.row ? (
               <ul className="mt-1 space-y-0.5 text-ink-soft">
+                <li>
+                  {hi ? 'कैटलॉग हिस्सा (तहसील % नहीं)' : 'Catalog share (not tehsil %)'}:{' '}
+                  {hover.row.saturation_pct == null ? '—' : `${hover.row.saturation_pct}%`}
+                </li>
                 <li>
                   {hi ? 'कैटलॉग योजनाएँ' : 'Catalog schemes'}: {hover.row.catalog_schemes ?? hover.row.national_schemes}
                 </li>
@@ -516,6 +521,11 @@ function AdminPanel({
         <Stat label={hi ? 'इंटर्नशिप' : 'Internships'} value={row.internships} />
         <Stat label={hi ? 'छात्रवृत्ति' : 'Scholarships'} value={row.scholarships} />
         <Stat label={hi ? 'अलर्ट' : 'Alerts'} value={row.alerts} />
+        <Stat
+          label={hi ? 'कैटलॉग हिस्सा' : 'Catalog share'}
+          value={row.saturation_pct == null ? '—' : `${row.saturation_pct}%`}
+          caption={hi ? 'सबसे भरे राज्य के सापेक्ष — तहसील कवरेज नहीं' : 'Vs the fullest state — not tehsil coverage'}
+        />
         <Stat
           label={hi ? 'लक्ष्य / नामांकित' : 'Target / enrolled'}
           value={`${dash(detail?.target_population)} / ${dash(detail?.enrolled)}`}

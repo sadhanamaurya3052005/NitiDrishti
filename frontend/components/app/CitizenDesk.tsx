@@ -4,13 +4,16 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useMemo, useRef, useState } from 'react';
 
+import { CatalogCacheStrip } from '@/components/app/CatalogCacheStrip';
+import { GazetteEvidence } from '@/components/site/GazetteEvidence';
+import { PrivacyStrip } from '@/components/app/PrivacyStrip';
 import { useExperience } from '@/components/providers/ExperienceProvider';
 import { useLocale } from '@/components/providers/LocaleProvider';
 import { useSchemes } from '@/hooks/useSchemes';
+import { useServerEvaluations } from '@/hooks/useServerEvaluations';
+import { createApplication, type ApplicationRecord } from '@/lib/blockE';
 import { CIVIC_SECTORS } from '@/lib/civic/sectors';
-import { evaluateScheme } from '@/lib/schemes/evaluate';
 import { stackedYearlyRupees } from '@/lib/schemes/liquidity';
-import { unlockHints } from '@/lib/schemes/sensitivity';
 import { speak, speechSupported, stopSpeaking } from '@/lib/speech';
 import type { CasteCategory, SchemeCategory } from '@/types';
 
@@ -20,7 +23,7 @@ const FILTERS: { id: 'all' | SchemeCategory; en: string; hi: string }[] = [
 ];
 
 export function CitizenDesk() {
-  const { locale, home } = useLocale();
+  const { locale, home, desk } = useLocale();
   const { profile, patchProfile, setDocument, enqueueDossier, session } = useExperience();
   const params = useSearchParams();
   const sectorId = params.get('sector');
@@ -29,19 +32,23 @@ export function CitizenDesk() {
   const [filter, setFilter] = useState<'all' | SchemeCategory>(sector ? sector.category : 'all');
   const [rate, setRate] = useState(1);
   const [preview, setPreview] = useState<string | null>(null);
+  const [tracked, setTracked] = useState<Record<string, ApplicationRecord>>({});
+  const [trackBusy, setTrackBusy] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const { schemes, loading, error } = useSchemes({
     category: filter,
     q: query,
   });
+  const schemeIds = useMemo(() => schemes.map((item) => item.id), [schemes]);
+  const { byId, status: engineStatus } = useServerEvaluations(schemeIds, profile);
 
   const ranked = useMemo(() => {
     return schemes
       .filter((scheme) => filter === 'all' || scheme.category === filter)
-      .map((scheme) => ({ scheme, evaluation: evaluateScheme(scheme, profile) }));
-  }, [filter, profile, schemes]);
+      .map((scheme) => ({ scheme, evaluation: byId[scheme.id] ?? null }));
+  }, [byId, filter, schemes]);
 
-  const eligible = ranked.filter((item) => item.evaluation.status === 'ELIGIBLE');
+  const eligible = ranked.filter((item) => item.evaluation?.status === 'ELIGIBLE');
   const yearly = stackedYearlyRupees(eligible.map((item) => item.scheme));
   const neededDocs = Array.from(
     new Set(schemes.flatMap((scheme) => scheme.documents.map((doc) => doc.id))),
@@ -82,6 +89,9 @@ export function CitizenDesk() {
           </span>
         </p>
       </header>
+
+      <PrivacyStrip />
+      <CatalogCacheStrip />
 
       <div className="grid gap-4 lg:grid-cols-[38%_62%]">
         <aside className="space-y-4 lg:sticky lg:top-24 lg:self-start">
@@ -167,8 +177,8 @@ export function CitizenDesk() {
             </p>
             <p className="mt-2 text-xs text-ink-muted">
               {locale === 'hi'
-                ? 'फ़ाइल ब्राउज़र में रहती है। OCR लाइव नहीं — स्व-घोषित टिक। अंक काले मास्क पर।'
-                : 'File stays in this browser. OCR is not live — tick self-declared docs. Digits stay behind the mask.'}
+                ? 'फ़ाइल ब्राउज़र में रहती है। पहचान OCR सर्वर पर नहीं। स्व-घोषित टिक। अंक काले मास्क पर।'
+                : 'File stays in this browser. Identity OCR is not uploaded. Tick self-declared docs. Digits stay behind the mask.'}
             </p>
             <button
               type="button"
@@ -257,6 +267,9 @@ export function CitizenDesk() {
               {locale === 'hi' ? 'सूची अभी उपलब्ध नहीं।' : 'Catalog is unavailable right now.'}
             </p>
           ) : null}
+          {engineStatus === 'error' ? (
+            <p className="nd-card px-5 py-4 text-center text-sm text-ink-muted">{desk.eligibility.engineDown}</p>
+          ) : null}
           {!loading && !error && ranked.length === 0 ? (
             <p className="nd-card px-5 py-10 text-center text-sm text-ink-muted">
               {query.trim() ? home.schemes.empty : home.schemes.emptyCatalog}
@@ -265,18 +278,20 @@ export function CitizenDesk() {
 
           {ranked.map(({ scheme, evaluation }) => {
             const name = locale === 'hi' ? scheme.nameHi : scheme.name;
-            const hints = unlockHints(scheme, profile);
-            const failIncome = evaluation.rules.find((rule) => rule.id.includes('income') && rule.verdict === 'fail');
+            const hints = evaluation?.rules.filter((rule) => rule.verdict === 'fail').map((rule) => rule.explanation) ?? [];
+            const failIncome = evaluation?.rules.find((rule) => rule.id.includes('income') && rule.verdict === 'fail');
             const tone =
-              evaluation.status === 'ELIGIBLE'
+              evaluation?.status === 'ELIGIBLE'
                 ? 'border-mint/50 bg-mint-soft/30'
-                : evaluation.status === 'PARTIAL_INFO'
+                : evaluation?.status === 'PARTIAL_INFO'
                   ? 'border-amber/50 bg-amber-soft/40'
-                  : 'border-rose/40 bg-rose-soft/30';
+                  : evaluation?.status === 'INELIGIBLE'
+                    ? 'border-rose/40 bg-rose-soft/30'
+                    : 'border-line bg-surface';
             const audio =
               locale === 'hi'
-                ? `${name}. स्थिति ${evaluation.status}. ${evaluation.rules.map((rule) => rule.explanation).join(' ')}`
-                : `${name}. Status ${evaluation.status}. ${evaluation.rules.map((rule) => rule.explanation).join(' ')}`;
+                ? `${name}. स्थिति ${evaluation?.status ?? '—'}. ${evaluation?.rules.map((rule) => rule.explanation).join(' ') ?? ''}`
+                : `${name}. Status ${evaluation?.status ?? '—'}. ${evaluation?.rules.map((rule) => rule.explanation).join(' ') ?? ''}`;
 
             return (
               <article key={scheme.id} className={`rounded-2xl border p-4 ${tone}`}>
@@ -298,7 +313,7 @@ export function CitizenDesk() {
                   </button>
                 </div>
                 <ul className="mt-3 space-y-1 font-mono text-[11px]">
-                  {evaluation.rules.map((rule) => (
+                  {(evaluation?.rules ?? []).map((rule) => (
                     <li key={rule.id} className={rule.verdict === 'pass' ? 'text-mint-deep' : rule.verdict === 'fail' ? 'text-rose-deep' : 'text-ink-muted'}>
                       [{rule.verdict.toUpperCase()}] {rule.explanation}
                     </li>
@@ -312,7 +327,7 @@ export function CitizenDesk() {
                     />
                   </div>
                 ) : null}
-                {evaluation.status === 'PARTIAL_INFO' && profile.kccActive === null && scheme.category === 'agriculture' ? (
+                {evaluation?.status === 'PARTIAL_INFO' && profile.kccActive === null && scheme.category === 'agriculture' ? (
                   <div className="mt-3 rounded-xl border border-amber/40 bg-surface px-3 py-2 text-sm">
                     {locale === 'hi' ? 'क्या किसान क्रेडिट कार्ड सक्रिय है?' : 'Is a Kisan Credit Card active?'}
                     <span className="ml-3 flex gap-2 sm:inline-flex">
@@ -328,14 +343,50 @@ export function CitizenDesk() {
                 {hints.length > 0 ? (
                   <p className="mt-3 text-sm text-ink-soft">
                     <span className="font-semibold">{home.inspector.remediation}: </span>
-                    {hints[0]?.message}
+                    {hints[0]}
                   </p>
                 ) : null}
+                <GazetteEvidence evaluation={evaluation} fallbackUrl={scheme.sourceUrl} className="mt-3" />
+                <p className="mt-2 text-[11px] text-ink-muted">
+                  {locale === 'hi'
+                    ? 'स्वीकृति सरकारी पेज पर होती है। यहाँ केवल ट्रैक।'
+                    : 'Approval happens on the official page. This desk only tracks.'}
+                </p>
                 <div className="mt-3 flex flex-wrap gap-2">
-                  <a href={scheme.sourceUrl} target="_blank" rel="noreferrer" className="text-xs font-semibold text-saffron">
-                    {scheme.sourceUrl.replace('https://', '')}
-                  </a>
-                  {evaluation.status === 'ELIGIBLE' ? (
+                  {scheme.sourceUrl ? (
+                    <a
+                      href={scheme.sourceUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="rounded-pill border border-line px-3 py-1 text-xs font-semibold"
+                    >
+                      {locale === 'hi' ? 'सरकारी apply' : 'Official apply'}
+                    </a>
+                  ) : null}
+                  {session?.accessToken ? (
+                    <button
+                      type="button"
+                      disabled={trackBusy === scheme.id || Boolean(tracked[scheme.id])}
+                      onClick={() => {
+                        setTrackBusy(scheme.id);
+                        void createApplication({ scheme_id: scheme.id })
+                          .then((row) => setTracked((current) => ({ ...current, [scheme.id]: row })))
+                          .finally(() => setTrackBusy(null));
+                      }}
+                      className="rounded-pill border border-line px-3 py-1 text-xs font-semibold disabled:opacity-50"
+                    >
+                      {tracked[scheme.id]?.stage
+                        ? tracked[scheme.id]?.stage
+                        : locale === 'hi'
+                          ? 'आवेदन ट्रैक करें'
+                          : 'Track application'}
+                    </button>
+                  ) : (
+                    <Link href="/login" className="rounded-pill border border-line px-3 py-1 text-xs font-semibold">
+                      {locale === 'hi' ? 'ट्रैक के लिए साइन इन' : 'Sign in to track'}
+                    </Link>
+                  )}
+                  {evaluation?.status === 'ELIGIBLE' ? (
                     <button
                       type="button"
                       onClick={() => enqueueDossier(name, scheme.id)}

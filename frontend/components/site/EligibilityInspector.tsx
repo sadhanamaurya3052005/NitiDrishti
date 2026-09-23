@@ -3,9 +3,10 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { X } from 'lucide-react';
 
+import { GazetteEvidence } from '@/components/site/GazetteEvidence';
 import { useLocale } from '@/components/providers/LocaleProvider';
-import type { SchemeEvaluation } from '@/lib/schemes/evaluate';
 import { cn } from '@/lib/cn';
+import type { SchemeEvaluation } from '@/lib/schemes/evaluate';
 
 export function EligibilityInspector({
   open,
@@ -80,6 +81,11 @@ export function EligibilityInspector({
               <div>
                 <p className="text-xs font-semibold uppercase tracking-wider text-ink-muted">{home.inspector.score}</p>
                 <p className="mt-1 text-sm font-semibold text-ink">{statusLabel}</p>
+                <GazetteEvidence evaluation={evaluation} className="mt-2" />
+                <p className="mt-2 text-xs text-ink-muted">{evaluation.disclaimer ?? home.inspector.disclaimer}</p>
+                {evaluation.conflicts && evaluation.conflicts.length > 0 ? (
+                  <p className="mt-2 text-xs font-medium text-amber-deep">{home.inspector.conflicts}</p>
+                ) : null}
               </div>
             </div>
             <ul className="space-y-2 px-5 pb-5">
@@ -93,6 +99,7 @@ export function EligibilityInspector({
                     rule.verdict === 'unknown' && 'border-amber/30 bg-amber-soft/70 text-amber-deep',
                   )}
                 >
+                  <span className="font-mono text-[11px]">[{rule.verdict.toUpperCase()}] </span>
                   <span className="font-semibold">{rule.label}: </span>
                   {rule.explanation}
                 </li>

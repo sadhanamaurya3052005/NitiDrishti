@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from datetime import date
 from uuid import UUID
 
 from sqlalchemy import Select, func, literal, or_, select, text
@@ -46,6 +47,41 @@ class SchemeRepository(BaseRepository[Scheme]):
         )
         return self.session.execute(stmt).first()
 
+    def catalog_row_as_of(
+        self, scheme: Scheme, as_of
+    ) -> tuple[Scheme, SchemeVersion, Department | None] | None:
+        """Pick the highest version whose effective window covers as_of.
+
+        Versions with both dates null are treated as always in force.
+        If none match, fall back to the current pointer.
+        """
+        versions = self.versions_for(scheme.id)
+        matching = [item for item in versions if _effective_on(item, as_of)]
+        chosen = matching[0] if matching else None
+        if matching:
+            chosen = max(matching, key=lambda item: item.version_number)
+        if chosen is None:
+            return self.catalog_row(scheme)
+        stmt = (
+            select(Scheme, SchemeVersion, Department)
+            .join(SchemeVersion, SchemeVersion.id == chosen.id)
+            .outerjoin(Department, Scheme.department_id == Department.id)
+            .options(
+                selectinload(SchemeVersion.benefits),
+                selectinload(SchemeVersion.rules),
+                selectinload(SchemeVersion.documents),
+            )
+            .where(Scheme.id == scheme.id)
+        )
+        return self.session.execute(stmt).first()
+
+    def list_needs_review(self, *, limit: int = 100) -> list[tuple[Scheme, SchemeVersion, Department | None]]:
+        return self.list_current(statuses=("needs_review",), limit=limit)
+
+    def count_by_status(self, status: str) -> int:
+        stmt = select(func.count()).select_from(Scheme).where(Scheme.status == status)
+        return int(self.session.scalar(stmt) or 0)
+
     def list_current(
         self,
         *,
@@ -53,6 +89,7 @@ class SchemeRepository(BaseRepository[Scheme]):
         q: str | None = None,
         statuses: tuple[str, ...] = ("published",),
         limit: int = 100,
+        offset: int = 0,
     ) -> list[tuple[Scheme, SchemeVersion, Department | None]]:
         stmt = (
             select(Scheme, SchemeVersion, Department)
@@ -75,7 +112,7 @@ class SchemeRepository(BaseRepository[Scheme]):
             stmt = stmt.order_by(rank.desc(), SchemeVersion.name)
         else:
             stmt = stmt.order_by(SchemeVersion.name)
-        stmt = stmt.limit(min(limit, 200))
+        stmt = stmt.offset(max(0, offset)).limit(min(limit, 200))
         return list(self.session.execute(stmt).all())
 
     def _extensions(self) -> frozenset[str]:
@@ -131,3 +168,13 @@ class SchemeRepository(BaseRepository[Scheme]):
     def published_count(self) -> int:
         stmt = select(func.count()).select_from(Scheme).where(Scheme.status == "published")
         return int(self.session.scalar(stmt) or 0)
+
+
+def _effective_on(version: SchemeVersion, as_of: date) -> bool:
+    start = version.effective_from
+    end = version.effective_to
+    if start is not None and as_of < start:
+        return False
+    if end is not None and as_of > end:
+        return False
+    return True
