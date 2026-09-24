@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { GazetteEvidence } from '@/components/site/GazetteEvidence';
 import { CscApiStrip } from '@/components/app/CscApiStrip';
@@ -10,10 +10,37 @@ import { useLocale } from '@/components/providers/LocaleProvider';
 import { usePwa } from '@/components/providers/PwaProvider';
 import { useSchemes } from '@/hooks/useSchemes';
 import { useServerEvaluations } from '@/hooks/useServerEvaluations';
-import { enqueueKioskApplicant, listKioskQueue, type KioskQueuedApplicant } from '@/lib/offline/kioskQueue';
-import { createApplication, getCscSummary, type ApplicationRecord } from '@/lib/blockE';
+import type { QueueState } from '@/lib/offline/kioskPolicy';
+import {
+  applicantState,
+  buildQueuedApplicant,
+  deleteKioskApplicant,
+  enqueueKioskApplicant,
+  listKioskQueue,
+  resetKioskRetry,
+  type KioskQueuedApplicant,
+} from '@/lib/offline/kioskQueue';
+import { requestKioskSync, syncKioskQueue } from '@/lib/offline/kioskSync';
+import { getCscSummary, type ApplicationRecord } from '@/lib/blockE';
 import { lastFourDigits, maskIdentity } from '@/lib/privacy/mask';
 import type { CasteCategory } from '@/types';
+
+function queueStateLabel(state: QueueState, hi: boolean): string {
+  if (state === 'SYNCING') return hi ? 'सिंक हो रहा है' : 'Syncing';
+  if (state === 'SYNCED') return hi ? 'सिंक हो गया' : 'Synced';
+  if (state === 'RETRY_REQUIRED') return hi ? 'फिर कोशिश करें' : 'Retry required';
+  if (state === 'FAILED') return hi ? 'असफल' : 'Failed';
+  if (state === 'CONFLICT') return hi ? 'टकराव' : 'Conflict';
+  return hi ? 'कतार में' : 'Queued';
+}
+
+function queueStateClass(state: QueueState): string {
+  if (state === 'SYNCED') return 'text-mint-deep';
+  if (state === 'SYNCING') return 'text-ink';
+  if (state === 'RETRY_REQUIRED') return 'text-amber-deep';
+  if (state === 'FAILED' || state === 'CONFLICT') return 'text-rose-deep';
+  return 'text-ink-muted';
+}
 
 export function CscIntake() {
   const { locale, app, home, desk } = useLocale();
@@ -31,6 +58,9 @@ export function CscIntake() {
   const [publishedSchemes, setPublishedSchemes] = useState<number | null>(null);
   const [lastFiled, setLastFiled] = useState<ApplicationRecord[]>([]);
   const [listTick, setListTick] = useState(0);
+  const [queueNotice, setQueueNotice] = useState<string | null>(null);
+  const [syncing, setSyncing] = useState(false);
+  const queueLock = useRef(false);
 
   const refreshQueue = useCallback(async () => {
     try {
@@ -42,6 +72,18 @@ export function CscIntake() {
 
   useEffect(() => {
     void refreshQueue();
+  }, [refreshQueue]);
+
+  useEffect(() => {
+    const onSync = () => {
+      void refreshQueue();
+    };
+    window.addEventListener('nd-kiosk-sync', onSync);
+    window.addEventListener('online', onSync);
+    return () => {
+      window.removeEventListener('nd-kiosk-sync', onSync);
+      window.removeEventListener('online', onSync);
+    };
   }, [refreshQueue]);
 
   useEffect(() => {
@@ -65,30 +107,80 @@ export function CscIntake() {
 
   const selected = evaluations.filter((item) => picked.includes(item.scheme.id));
 
-  const addToQueue = async () => {
-    if (!consent || !name.trim()) return;
-    await enqueueKioskApplicant({
-      id: `vle-${Date.now()}`,
-      name: name.trim(),
-      maskedId: maskIdentity(idRaw),
-      age: profile.age,
-      income: profile.income,
-      createdAt: new Date().toISOString(),
-      schemeIds: picked,
-    });
-    if (session?.accessToken) {
-      const filed = (
-        await Promise.all(
-          picked.map((schemeId) => createApplication({ scheme_id: schemeId }).catch(() => undefined)),
-        )
-      ).filter((row): row is ApplicationRecord => Boolean(row));
-      setLastFiled(filed);
-      setListTick((tick) => tick + 1);
+  const runSync = useCallback(async () => {
+    if (!session?.accessToken) return { filed: [] as ApplicationRecord[], pending: 0, failed: 0 };
+    setSyncing(true);
+    try {
+      const result = await syncKioskQueue();
+      if (result.filed.length > 0) {
+        setLastFiled(result.filed);
+        setListTick((tick) => tick + 1);
+      }
+      await refreshQueue();
+      return result;
+    } finally {
+      setSyncing(false);
     }
-    setName('');
-    setIdRaw('');
-    await refreshQueue();
-  };
+  }, [refreshQueue, session?.accessToken]);
+
+  const addToQueue = useCallback(async () => {
+    if (queueLock.current || !consent || !name.trim()) return;
+    queueLock.current = true;
+    try {
+      const row = buildQueuedApplicant({
+        name: name.trim(),
+        maskedId: maskIdentity(idRaw),
+        age: profile.age,
+        income: profile.income,
+        schemeIds: picked,
+      });
+      await enqueueKioskApplicant(row);
+      setName('');
+      setIdRaw('');
+      await refreshQueue();
+      if (!session?.accessToken) {
+        setQueueNotice(
+          locale === 'hi'
+            ? 'स्थानीय कतार में सहेजा। अतिथि मोड सर्वर पर पंक्ति नहीं लिखता।'
+            : 'Saved to this device. Guest mode writes zero server rows.',
+        );
+        setLastFiled([]);
+        return;
+      }
+      if (!online) {
+        setQueueNotice(
+          locale === 'hi'
+            ? 'ऑफ़लाइन कतार में सहेजा। नेट आने पर वही अनुरोध-आईडी से सिंक होगा।'
+            : 'Queued offline. It will sync with the same request ID when the network returns.',
+        );
+        setLastFiled([]);
+        return;
+      }
+      setQueueNotice(null);
+      const result = await runSync();
+      if (result.pending > 0) {
+        setQueueNotice(
+          locale === 'hi'
+            ? 'कुछ पंक्तियाँ कतार में रह गईं। F12 या Retry से फिर भेजें।'
+            : 'Some items remain queued. Use F12 or Retry.',
+        );
+      }
+    } finally {
+      queueLock.current = false;
+    }
+  }, [
+    consent,
+    idRaw,
+    locale,
+    name,
+    online,
+    picked,
+    profile.age,
+    profile.income,
+    refreshQueue,
+    runSync,
+    session?.accessToken,
+  ]);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -104,13 +196,17 @@ export function CscIntake() {
       }
       if (event.altKey && event.key.toLowerCase() === 'n') {
         event.preventDefault();
-        setName('');
-        setIdRaw('');
+        void addToQueue();
+      }
+      if (event.key === 'F12') {
+        event.preventDefault();
+        requestKioskSync();
+        void runSync();
       }
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, []);
+  }, [addToQueue, runSync]);
 
   return (
     <div className="mx-auto w-full max-w-[1400px]">
@@ -132,6 +228,85 @@ export function CscIntake() {
       </header>
 
       <CscApiStrip refreshKey={listTick} />
+      {queueNotice ? (
+        <p className="mb-4 text-xs font-semibold text-amber-deep" role="status">
+          {queueNotice}
+        </p>
+      ) : null}
+      {queue.length > 0 ? (
+        <section className="mb-4 nd-card p-4" aria-live="polite">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-sm font-semibold">{locale === 'hi' ? 'स्थानीय कतार' : 'Local queue'}</h2>
+            <button
+              type="button"
+              onClick={() => {
+                requestKioskSync();
+                void runSync();
+              }}
+              disabled={syncing || !session?.accessToken}
+              className="rounded-xl border border-line px-3 py-1 text-xs font-semibold disabled:opacity-40"
+            >
+              {syncing
+                ? locale === 'hi'
+                  ? 'सिंक…'
+                  : 'Syncing…'
+                : locale === 'hi'
+                  ? 'अभी सिंक (F12)'
+                  : 'Sync now (F12)'}
+            </button>
+          </div>
+          <ul className="mt-2 space-y-2">
+            {queue.map((row) => {
+              const state = applicantState(row);
+              return (
+                <li key={row.id} className="rounded-xl border border-line px-3 py-2">
+                  <p className="text-sm font-semibold">{row.name || '—'}</p>
+                  <p className={`text-xs font-semibold ${queueStateClass(state)}`}>
+                    {queueStateLabel(state, locale === 'hi')}
+                    {row.ops.some((item) => item.serverApplicationId)
+                      ? ` · ${row.ops.filter((item) => item.serverApplicationId).length} ${locale === 'hi' ? 'आवेदन' : 'application(s)'}`
+                      : ''}
+                  </p>
+                  {row.ops
+                    .filter((item) => item.lastError)
+                    .map((item) => (
+                      <p key={item.requestId} className="mt-1 text-[11px] text-ink-muted">
+                        {item.lastError}
+                      </p>
+                    ))}
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {state === 'RETRY_REQUIRED' || state === 'FAILED' || state === 'CONFLICT' ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          void resetKioskRetry(row.id).then(() => {
+                            requestKioskSync();
+                            void runSync();
+                          });
+                        }}
+                        className="rounded-xl border border-line px-2 py-1 text-[11px] font-semibold"
+                      >
+                        {locale === 'hi' ? 'फिर कोशिश' : 'Retry'}
+                      </button>
+                    ) : null}
+                    {state === 'SYNCED' || state === 'FAILED' ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          void deleteKioskApplicant(row.id).then(() => refreshQueue());
+                        }}
+                        className="rounded-xl border border-line px-2 py-1 text-[11px]"
+                      >
+                        {locale === 'hi' ? 'हटाएँ' : 'Remove'}
+                      </button>
+                    ) : null}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      ) : null}
       {lastFiled.length > 0 ? (
         <section className="mb-4 nd-card p-4">
           <h2 className="text-sm font-semibold">

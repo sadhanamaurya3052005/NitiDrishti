@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import select
@@ -35,6 +36,34 @@ class AuditRepository(BaseRepository[AuditLog]):
         )
         self.session.add(row)
         return row
+
+    def find_application_create(self, *, actor_user_id: UUID, request_id: str) -> AuditLog | None:
+        """Prior application_submit for this actor + request_id (not an officer stage record)."""
+        if not request_id or request_id == "unknown":
+            return None
+        stmt = (
+            select(AuditLog)
+            .where(
+                AuditLog.actor_user_id == actor_user_id,
+                AuditLog.action == "application_submit",
+                AuditLog.request_id == request_id,
+            )
+            .order_by(AuditLog.created_at.asc())
+        )
+        for row in self.session.scalars(stmt):
+            if row.detail and row.detail.startswith("recorded_official_outcome"):
+                continue
+            return row
+        return None
+
+    def latest_logout_at(self, user_id: UUID) -> datetime | None:
+        stmt = (
+            select(AuditLog.created_at)
+            .where(AuditLog.actor_user_id == user_id, AuditLog.action == "logout")
+            .order_by(AuditLog.created_at.desc())
+            .limit(1)
+        )
+        return self.session.scalar(stmt)
 
     def list_recent(self, *, limit: int = 40, action: str | None = None) -> list[AuditLog]:
         stmt = select(AuditLog).order_by(AuditLog.created_at.desc()).limit(min(max(limit, 1), 100))

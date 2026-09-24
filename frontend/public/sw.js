@@ -6,7 +6,7 @@ const CATALOG_CACHE = 'nd-catalog-v1';
 const STATIC_CACHE = 'nd-static-v1';
 const META_PATH = '/nd-catalog-meta.json';
 
-const PRECACHE = ['/schemes', '/citizen', '/icon.svg', '/manifest.webmanifest'];
+const PRECACHE = ['/schemes', '/citizen', '/csc', '/icon.svg', '/manifest.webmanifest'];
 
 function pathnameOf(url) {
   try {
@@ -52,6 +52,7 @@ function isStaticShell(url) {
       parsed.pathname === '/' ||
       parsed.pathname === '/schemes' ||
       parsed.pathname === '/citizen' ||
+      parsed.pathname === '/csc' ||
       parsed.pathname === '/icon.svg'
     );
   } catch {

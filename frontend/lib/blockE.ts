@@ -325,14 +325,23 @@ export interface ApplicationRecord {
   created_at: string;
 }
 
-export function createApplication(input: {
-  scheme_id: string;
-  district_id?: string;
-  stage?: 'Discovered' | 'Submitted';
-}): Promise<ApplicationRecord> {
+export function createApplication(
+  input: {
+    scheme_id: string;
+    district_id?: string;
+    stage?: 'Discovered' | 'Submitted';
+  },
+  requestId?: string,
+): Promise<ApplicationRecord> {
+  const id =
+    requestId ||
+    (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+      ? crypto.randomUUID()
+      : `app-${Date.now()}`);
   return envelope<ApplicationRecord>('/api/v1/applications', {
     method: 'POST',
     body: JSON.stringify(input),
+    headers: { 'X-Request-Id': id },
   });
 }
 

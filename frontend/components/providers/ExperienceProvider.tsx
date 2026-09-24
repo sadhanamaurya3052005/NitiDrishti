@@ -3,6 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 import {
+  ApiError,
   createDossier,
   deleteAccount,
   fetchMe,
@@ -125,6 +126,10 @@ export function ExperienceProvider({ children }: { children: React.ReactNode }) 
 
     let cancelled = false;
     const hydrate = async () => {
+      const keepOfflineSession = (error: unknown) => {
+        const status = error instanceof ApiError ? error.status : null;
+        return status === null || status === 408 || status === 502 || status === 503 || status === 504;
+      };
       try {
         const me = await fetchMe(stored.accessToken as string);
         if (cancelled) return;
@@ -140,8 +145,15 @@ export function ExperienceProvider({ children }: { children: React.ReactNode }) 
         setConsentRetentionState(consentFromUser(me));
         const preferred = preferredServerRole(me.roles);
         if (preferred) window.localStorage.setItem(PREVIEW_ROLE_STORAGE_KEY, preferred);
-      } catch {
-        if (!stored.refreshToken) return;
+      } catch (error) {
+        if (keepOfflineSession(error)) return;
+        if (!stored.refreshToken) {
+          if (cancelled) return;
+          setSession(null);
+          setConsentRetentionState(false);
+          window.localStorage.removeItem(SESSION_STORAGE_KEY);
+          return;
+        }
         try {
           const bundle = await refreshAccount(stored.refreshToken);
           if (cancelled) return;
@@ -149,8 +161,9 @@ export function ExperienceProvider({ children }: { children: React.ReactNode }) 
           setSession(next);
           persistSession(next);
           setConsentRetentionState(consentFromUser(bundle.user));
-        } catch {
+        } catch (refreshError) {
           if (cancelled) return;
+          if (keepOfflineSession(refreshError)) return;
           setSession(null);
           setConsentRetentionState(false);
           window.localStorage.removeItem(SESSION_STORAGE_KEY);
@@ -212,6 +225,7 @@ export function ExperienceProvider({ children }: { children: React.ReactNode }) 
       persistSession(next);
       window.localStorage.setItem(ROLE_VIEW_STORAGE_KEY, view);
       window.localStorage.setItem(PREVIEW_ROLE_STORAGE_KEY, storedRole);
+      window.dispatchEvent(new Event('nd-kiosk-sync'));
       window.scrollTo({ top: 0, behavior: 'smooth' });
     },
     [],
