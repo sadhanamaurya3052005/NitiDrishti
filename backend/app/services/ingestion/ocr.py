@@ -47,6 +47,11 @@ class OcrResult:
 
 
 def tesseract_status() -> dict[str, object]:
+    """Honest OCR capability. Optional extras + Tesseract binary are both required to be available.
+
+    status is available | not_configured | unavailable. available is True only when
+    pytesseract/Pillow import *and* shutil.which finds TESSERACT_CMD (never a hardcoded path).
+    """
     cmd = str(_cfg("tesseract_cmd", "tesseract") or "tesseract").strip() or "tesseract"
     path = shutil.which(cmd)
     try:
@@ -55,6 +60,8 @@ def tesseract_status() -> dict[str, object]:
     except ImportError:
         return {
             "available": False,
+            "optional": True,
+            "status": "not_configured",
             "engine": None,
             "cmd": cmd,
             "reason": "pytesseract/Pillow not installed",
@@ -62,11 +69,20 @@ def tesseract_status() -> dict[str, object]:
     if path is None:
         return {
             "available": False,
+            "optional": True,
+            "status": "not_configured",
             "engine": None,
             "cmd": cmd,
             "reason": "Tesseract binary not on PATH",
         }
-    return {"available": True, "engine": "tesseract", "cmd": path, "reason": None}
+    return {
+        "available": True,
+        "optional": True,
+        "status": "available",
+        "engine": "tesseract",
+        "cmd": path,
+        "reason": None,
+    }
 
 
 def text_is_thin(text: str) -> bool:
@@ -159,31 +175,41 @@ def _ocr_images(pages: list[bytes]) -> OcrResult:
         pytesseract.pytesseract.tesseract_cmd = cmd
     texts: list[str] = []
     confs: list[float] = []
-    for raw in pages:
-        image = Image.open(io.BytesIO(raw))
-        if image.mode not in {"L", "RGB"}:
-            image = image.convert("RGB")
-        payload = pytesseract.image_to_data(
-            image,
-            lang=str(_cfg("ocr_languages", "eng+hin") or "eng+hin"),
-            output_type=pytesseract.Output.DICT,
+    try:
+        for raw in pages:
+            image = Image.open(io.BytesIO(raw))
+            if image.mode not in {"L", "RGB"}:
+                image = image.convert("RGB")
+            payload = pytesseract.image_to_data(
+                image,
+                lang=str(_cfg("ocr_languages", "eng+hin") or "eng+hin"),
+                output_type=pytesseract.Output.DICT,
+            )
+            words = [
+                str(word)
+                for word, conf in zip(payload.get("text", []), payload.get("conf", []), strict=False)
+                if str(word).strip()
+            ]
+            texts.append(" ".join(words))
+            numeric = []
+            for conf in payload.get("conf", []):
+                try:
+                    value = float(conf)
+                except (TypeError, ValueError):
+                    continue
+                if value >= 0:
+                    numeric.append(value / 100.0)
+            if numeric:
+                confs.append(sum(numeric) / len(numeric))
+    except Exception:
+        return OcrResult(
+            available=False,
+            engine="tesseract",
+            text="",
+            confidence=None,
+            pages=0,
+            reason="OCR failed to process the document",
         )
-        words = [
-            str(word)
-            for word, conf in zip(payload.get("text", []), payload.get("conf", []), strict=False)
-            if str(word).strip()
-        ]
-        texts.append(" ".join(words))
-        numeric = []
-        for conf in payload.get("conf", []):
-            try:
-                value = float(conf)
-            except (TypeError, ValueError):
-                continue
-            if value >= 0:
-                numeric.append(value / 100.0)
-        if numeric:
-            confs.append(sum(numeric) / len(numeric))
     text = scrub_identifier_digits("\n".join(texts).strip()) or ""
     confidence = round(sum(confs) / len(confs), 2) if confs else None
     return OcrResult(

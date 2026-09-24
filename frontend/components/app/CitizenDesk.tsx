@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { CatalogCacheStrip } from '@/components/app/CatalogCacheStrip';
 import { GazetteEvidence } from '@/components/site/GazetteEvidence';
@@ -11,7 +11,7 @@ import { useExperience } from '@/components/providers/ExperienceProvider';
 import { useLocale } from '@/components/providers/LocaleProvider';
 import { useSchemes } from '@/hooks/useSchemes';
 import { useServerEvaluations } from '@/hooks/useServerEvaluations';
-import { createApplication, type ApplicationRecord } from '@/lib/blockE';
+import { createApplication, listApplications, type ApplicationRecord } from '@/lib/blockE';
 import { CIVIC_SECTORS } from '@/lib/civic/sectors';
 import { stackedYearlyRupees } from '@/lib/schemes/liquidity';
 import { speak, speechSupported, stopSpeaking } from '@/lib/speech';
@@ -35,12 +35,31 @@ export function CitizenDesk() {
   const [tracked, setTracked] = useState<Record<string, ApplicationRecord>>({});
   const [trackBusy, setTrackBusy] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const trackLock = useRef(new Set<string>());
   const { schemes, loading, error } = useSchemes({
     category: filter,
     q: query,
   });
   const schemeIds = useMemo(() => schemes.map((item) => item.id), [schemes]);
   const { byId, status: engineStatus } = useServerEvaluations(schemeIds, profile);
+
+  useEffect(() => {
+    if (!session?.accessToken) {
+      setTracked({});
+      return;
+    }
+    void listApplications()
+      .then((data) => {
+        const next: Record<string, ApplicationRecord> = {};
+        for (const row of data.applications) {
+          if (row.scheme_id && next[row.scheme_id] == null) {
+            next[row.scheme_id] = row;
+          }
+        }
+        setTracked(next);
+      })
+      .catch(() => undefined);
+  }, [session?.accessToken]);
 
   const ranked = useMemo(() => {
     return schemes
@@ -368,9 +387,14 @@ export function CitizenDesk() {
                       type="button"
                       disabled={trackBusy === scheme.id || Boolean(tracked[scheme.id])}
                       onClick={() => {
+                        if (trackLock.current.has(scheme.id) || tracked[scheme.id]) return;
+                        trackLock.current.add(scheme.id);
                         setTrackBusy(scheme.id);
                         void createApplication({ scheme_id: scheme.id })
                           .then((row) => setTracked((current) => ({ ...current, [scheme.id]: row })))
+                          .catch(() => {
+                            trackLock.current.delete(scheme.id);
+                          })
                           .finally(() => setTrackBusy(null));
                       }}
                       className="rounded-pill border border-line px-3 py-1 text-xs font-semibold disabled:opacity-50"

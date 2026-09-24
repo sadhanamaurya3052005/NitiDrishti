@@ -69,7 +69,7 @@ def _match_to_rupees(match: re.Match[str]) -> int | None:
         value *= 10_000_000
     if value < 0:
         return None
-    return int(round(value))
+    return round(value)
 
 
 def date_from_text(text: str) -> date | None:

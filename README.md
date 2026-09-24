@@ -18,7 +18,7 @@ citizen exactly what they qualify for — with the reason, the source and the ve
 | Status | Freeze tag **`v1.0-final`** — QA / security / data audit starts here. No major features during the audit. |
 | Frontend | Next.js 15 App Router + TypeScript + Tailwind + Framer Motion |
 | Backend | FastAPI + SQLAlchemy + Alembic — `/health`, `/ready`, `/api/version` |
-| Database | Native PostgreSQL (this machine: 18). No Docker. Schema via Alembic. `pg_trgm` + `unaccent` required; PostGIS optional (maps use bundled TopoJSON). |
+| Database | Native PostgreSQL (this machine: 18). No Docker. Schema via Alembic. `pg_trgm` + `unaccent` required. PostGIS and pgvector are **not required** (maps use bundled TopoJSON; embeddings have no VECTOR column). |
 
 ---
 
@@ -59,7 +59,7 @@ Copy-Item .env.example .env
 Copy-Item frontend\.env.local.example frontend\.env.local
 ```
 
-Edit `.env`: set `POSTGRES_PASSWORD`, a long `JWT_SECRET_KEY`, and `POSTGRES_DB` to the database you actually created (template name is `nitidrishti_dev`).
+Edit `.env`: set `POSTGRES_PASSWORD`, a long `JWT_SECRET_KEY`, and `POSTGRES_DB` to the database you actually created. The documented local database name is **`nitidrishti_db`**. Settings fallback if `POSTGRES_DB` is unset is `nitidrishti_dev`. `DATABASE_URL` is an optional override that replaces the `POSTGRES_*` parts.
 
 ### 2. Database (once)
 
@@ -69,6 +69,9 @@ Create a database that matches `.env` (`POSTGRES_DB` / `POSTGRES_USER`). Then fr
 cd backend
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
+# Native PostgreSQL 18 / Git for Windows may set CURL_CA_BUNDLE to a missing file.
+# That is a Windows environment issue, not a project setting. Unset before pip/psycopg TLS.
+if ($env:CURL_CA_BUNDLE) { Remove-Item Env:CURL_CA_BUNDLE }
 pip install -r requirements.txt
 python -m scripts.init_extensions
 alembic upgrade head
@@ -76,9 +79,11 @@ python -m scripts.seed_reference
 python -m scripts.bootstrap_operators
 ```
 
-`pg_trgm` and `unaccent` are required. PostGIS is optional (GIS uses client TopoJSON).
+`pg_trgm` and `unaccent` are required. **PostGIS is optional / not required** (GIS uses bundled TopoJSON; native PostgreSQL 18 here does not install it). **pgvector is optional / future** (semantic search; `document_embeddings` has no `VECTOR` column). Do not install either extension just to remove a warning.
 
 If `Activate.ps1` is blocked once: `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`
+
+On Windows, uvicorn may log `WinError 10054` when a browser tab, service worker, or `next dev` aborts a request. That is a client disconnect (`WSAECONNRESET`). If `/health` still returns and the process is alive, it is not a server crash.
 
 ### 3. Every day — Terminal A (API)
 

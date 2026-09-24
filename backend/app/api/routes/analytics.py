@@ -8,13 +8,16 @@ from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.deps import CurrentUser, request_id_of
+from app.core.deps import request_id_of, require_workspace
+from app.models.identity import User
 from app.schemas.envelope import ok
 from app.services.analytics import AnalyticsService
 
 router = APIRouter(prefix="/api/v1", tags=["analytics"])
 
 DbSession = Annotated[Session, Depends(get_db)]
+# Same role set as WORKSPACE_ROLES["welfare"]: officer writes, not public catalog reads.
+WelfareDesk = Annotated[User, Depends(require_workspace("welfare"))]
 
 
 @router.get("/analytics/summary", summary="Honest catalog aggregates")
@@ -24,11 +27,17 @@ def analytics_summary(request: Request, db: DbSession) -> dict:
 
 @router.get("/csc/summary", summary="CSC desk aggregates from Postgres")
 def csc_summary(request: Request, db: DbSession) -> dict:
+    """Public catalog honesty for the CSC desk preview. Same counts as /analytics/summary.
+
+    Guest kiosk UI needs published_schemes without a JWT. Intake writes stay on
+    authenticated routes (applications / dossiers / alerts).
+    """
     return ok(AnalyticsService(db).csc_summary(), request_id_of(request))
 
 
 @router.get("/welfare/summary", summary="Welfare desk aggregates from Postgres")
 def welfare_summary(request: Request, db: DbSession) -> dict:
+    """Public catalog honesty for the welfare desk preview. Funnel stays null without rows."""
     return ok(AnalyticsService(db).welfare_summary(), request_id_of(request))
 
 
@@ -51,5 +60,5 @@ def analytics_district_detail(district_id: str, request: Request, db: DbSession)
     "/analytics/districts/{district_id}/csc-camp",
     summary="Notify CSC operators of a targeted camp (in-app alert, no SMS)",
 )
-def dispatch_csc_camp(district_id: str, request: Request, user: CurrentUser, db: DbSession) -> dict:
+def dispatch_csc_camp(district_id: str, request: Request, user: WelfareDesk, db: DbSession) -> dict:
     return ok(AnalyticsService(db).dispatch_csc_camp(user, district_id), request_id_of(request))

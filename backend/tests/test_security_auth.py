@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pytest
 
+from app.core.deps import require_workspace
 from app.core.exceptions import AuthError, ForbiddenError
 from app.core.rbac import WORKSPACE_ROLES, assert_roles, assert_workspace, preferred_role
 from app.core.security import (
@@ -14,6 +15,7 @@ from app.core.security import (
     scrub_identifier_digits,
     verify_password,
 )
+from app.core.token_revoke import jti_is_revoked, revoke_jti, revoke_sid, sid_is_revoked
 
 
 def test_password_hash_is_not_reversible() -> None:
@@ -39,9 +41,19 @@ def test_jwt_round_trip_and_type_check() -> None:
     payload = decode_token(token, expected_type="access")
     assert payload["sub"] == "11111111-1111-1111-1111-111111111111"
     assert payload["roles"] == ["CITIZEN"]
+    assert payload["jti"]
     refresh = create_token("11111111-1111-1111-1111-111111111111", token_type="refresh")
     with pytest.raises(AuthError):
         decode_token(refresh, expected_type="access")
+
+
+def test_revoked_jti_and_sid_are_rejected() -> None:
+    revoke_jti("jti-dead", int(9e12))
+    revoke_sid("sid-dead")
+    assert jti_is_revoked("jti-dead")
+    assert sid_is_revoked("sid-dead")
+    assert not jti_is_revoked("jti-live")
+    assert not sid_is_revoked("sid-live")
 
 
 def test_workspace_matrix_matches_contracts() -> None:
@@ -55,3 +67,27 @@ def test_workspace_matrix_matches_contracts() -> None:
     with pytest.raises(ForbiddenError):
         assert_workspace(["CITIZEN"], "welfare")
     assert_workspace(["WELFARE_OFFICER"], "welfare")
+
+
+class _Role:
+    def __init__(self, code: str) -> None:
+        self.code = code
+
+
+class _User:
+    def __init__(self, *codes: str) -> None:
+        self.roles = [_Role(code) for code in codes]
+
+
+def test_require_workspace_dependency_matches_matrix() -> None:
+    csc_gate = require_workspace("csc")
+    welfare_gate = require_workspace("welfare")
+    assert csc_gate(_User("CSC_OPERATOR")).roles[0].code == "CSC_OPERATOR"
+    assert csc_gate(_User("ADMIN")).roles[0].code == "ADMIN"
+    assert welfare_gate(_User("WELFARE_OFFICER")).roles[0].code == "WELFARE_OFFICER"
+    with pytest.raises(ForbiddenError):
+        csc_gate(_User("CITIZEN"))
+    with pytest.raises(ForbiddenError):
+        welfare_gate(_User("CSC_OPERATOR"))
+    with pytest.raises(ForbiddenError):
+        welfare_gate(_User("POLICY_ANALYST"))

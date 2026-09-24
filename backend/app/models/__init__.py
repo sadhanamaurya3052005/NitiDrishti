@@ -45,8 +45,8 @@ PRODUCTION_TABLES = (
 __all__ = [
     "PRODUCTION_TABLES",
     "ActionDossier",
-    "Application",
     "Alert",
+    "Application",
     "AuditLog",
     "Benefit",
     "Department",

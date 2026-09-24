@@ -51,7 +51,7 @@ Writes go `CLI/script → SchemeIngestionService → repositories → PostgreSQL
 |---|---|---|
 | `html` | `app/services/ingestion/html.py` | requests + BeautifulSoup; reads `__NEXT_DATA__` when present |
 | `dynamic` | `app/services/ingestion/dynamic.py` | Optional Playwright. Not required. No login, no CAPTCHA |
-| `pdf` | `app/services/ingestion/pdf.py` | Text PDFs via pypdf. Thin scans use local Tesseract when `FEATURE_AI_EXTRACTION` is on |
+| `pdf` | `app/services/ingestion/pdf.py` | Text PDFs via pypdf. Thin scans use local Tesseract when `FEATURE_AI_EXTRACTION` is on. OCR extras (`pytesseract`/`Pillow`/`pymupdf`) and the Tesseract binary are optional; `GET /ready` `flags.ocr.status` is `available`, `not_configured`, or `unavailable`. |
 | `tabular` | `app/services/ingestion/tabular.py` | CSV and Excel |
 | `json` | `app/services/ingestion/json_source.py` | Departmental JSON lists or objects |
 
@@ -84,6 +84,21 @@ Facts (name, summary, benefits, rules) come from the fetched artefact. Registry 
 `GET /health` and `GET /api/version` stay flat. Admin `POST /sources/{id}/run` is protected by JWT; trigger ingest from the CLI unless you have an admin session.
 
 JSON list shape is unchanged: `id, code, name, nameHi, ministry, ministryHi, category, badge, badgeHi, summary, summaryHi, benefit, benefitHi, documents, rules, sourceUrl`. Desks are **not** rebuilt to consume Postgres.
+
+## Failed ingestion logs (local `nitidrishti_db`)
+
+Historical `ingestion_logs` with `status=failed` are **kept**. They are not deleted to make counts look clean. Classification of the 58 failed rows (2026-09-14 … 2026-09-24):
+
+| Root cause (from `error_code` + `detail`) | Count | Notes |
+|---|---|---|
+| `SOURCE_UNAVAILABLE` — robots.txt fail-closed (403 / 500 / HTML body / unreachable / cannot confirm) | 30 | Correct. Do not bypass robots. |
+| `SOURCE_UNAVAILABLE` — HTTP 404 after fetch | 15 | Official URL gone or redirected host 404. |
+| `SOURCE_UNAVAILABLE` — TLS `SSLError` on Vikaspedia | 2 | Transient network. |
+| `INTERNAL_ERROR` — `NameError` / `AttributeError` | 11 | Historical parser bugs on 2026-09-14. **Every one of those sources later ingested `ok`.** Current pipeline does not still fail them. |
+
+No failed `detail` contained passwords, tokens, or Aadhaar-like digits. `http_status` is null on these rows because fail-closed robots/errors abort before a page status is stored.
+
+Do not invent successful catalogue rows for permanently blocked or 404 hosts.
 
 ## Blocked / skipped hosts (observed)
 

@@ -68,6 +68,7 @@ def create_token(
     *,
     token_type: TokenType,
     roles: list[str] | None = None,
+    sid: str | None = None,
 ) -> str:
     now = datetime.now(UTC)
     if token_type == "access":
@@ -81,6 +82,8 @@ def create_token(
         "exp": int((now + lifetime).timestamp()),
         "jti": str(uuid4()),
     }
+    if sid:
+        payload["sid"] = sid
     if token_type == "access":
         payload["roles"] = roles or []
     return jwt.encode(payload, _require_signing_key(), algorithm=settings.jwt_algorithm)

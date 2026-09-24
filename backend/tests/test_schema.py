@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import pytest
-from sqlalchemy import inspect
+from sqlalchemy import UniqueConstraint, inspect
 
 from app.core.database import Base, check_connection, engine
 from app.data.india_geography import DEPARTMENTS, DISTRICTS, ROLES, STATES
@@ -13,6 +13,14 @@ from app.models import PRODUCTION_TABLES
 def test_production_table_count() -> None:
     assert len(PRODUCTION_TABLES) == 26
     assert len(set(PRODUCTION_TABLES)) == 26
+
+
+def test_user_roles_uniqueness_is_composite_primary_key() -> None:
+    """Alembic must not emit a redundant UNIQUE; PK (user_id, role_id) is enough."""
+    table = Base.metadata.tables["user_roles"]
+    assert {col.name for col in table.primary_key} == {"user_id", "role_id"}
+    extras = [constraint for constraint in table.constraints if isinstance(constraint, UniqueConstraint)]
+    assert extras == []
 
 
 def test_all_production_tables_are_mapped() -> None:

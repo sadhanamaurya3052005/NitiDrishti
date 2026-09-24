@@ -22,7 +22,9 @@ def _request_id(request: Request) -> str:
 
 
 @router.get("/policies", summary="Ingested policies")
-def list_policies(request: Request, db: DbSession, q: str | None = Query(default=None)) -> dict:
+def list_policies(
+    request: Request, db: DbSession, q: Annotated[str | None, Query()] = None
+) -> dict:
     return ok({"policies": PolicyCatalogService(db).list_policies(q=q)}, _request_id(request))
 
 
@@ -54,9 +56,9 @@ def compare_versions(
     policy_id: str,
     request: Request,
     db: DbSession,
-    from_version: str | None = Query(default=None),
-    to_version: str | None = Query(default=None),
-    as_of: date | None = Query(default=None),
+    from_version: Annotated[str | None, Query()] = None,
+    to_version: Annotated[str | None, Query()] = None,
+    as_of: Annotated[date | None, Query()] = None,
 ) -> dict:
     return ok(
         PolicyCatalogService(db).compare(

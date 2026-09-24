@@ -5,9 +5,18 @@ from __future__ import annotations
 from sqlalchemy.orm import Session
 
 from app.config import settings
-from app.repositories.ingestion import IngestionLogRepository, SourceDocumentRepository, SourceRepository
+from app.repositories.ingestion import (
+    IngestionLogRepository,
+    SourceDocumentRepository,
+    SourceRepository,
+)
 from app.repositories.schemes import SchemeRepository
-from app.services.ingestion.layers import AIRFLOW_IMPLEMENTED, ORCHESTRATOR, PIPELINE_STAGES, PRINCIPLE
+from app.services.ingestion.layers import (
+    AIRFLOW_IMPLEMENTED,
+    ORCHESTRATOR,
+    PIPELINE_STAGES,
+    PRINCIPLE,
+)
 from app.services.ingestion.snapshot import raw_root
 
 

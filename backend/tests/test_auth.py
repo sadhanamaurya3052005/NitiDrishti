@@ -115,6 +115,25 @@ def test_register_login_me_logout_envelope(client: TestClient) -> None:
         logged_out = client.post("/api/v1/auth/logout", headers=headers)
         assert logged_out.status_code == 200
         assert logged_out.json()["data"]["logged_out"] is True
+
+        dead = client.get("/api/v1/auth/me", headers=headers)
+        assert dead.status_code == 401
+        assert dead.json()["error"]["code"] == "AUTH_ERROR"
+
+        replay = client.post("/api/v1/auth/logout", headers=headers)
+        assert replay.status_code == 401
+
+        stale_refresh = client.post(
+            "/api/v1/auth/refresh", json={"refresh_token": login.json()["data"]["refresh_token"]}
+        )
+        assert stale_refresh.status_code == 401
+
+        again = client.post("/api/v1/auth/login", json={"email": email, "password": "test-pass-12"})
+        assert again.status_code == 200
+        fresh = again.json()["data"]["access_token"]
+        me_again = client.get("/api/v1/auth/me", headers={"Authorization": f"Bearer {fresh}"})
+        assert me_again.status_code == 200
+        assert me_again.json()["data"]["roles"] == ["CITIZEN"]
     finally:
         _cleanup(email)
 
