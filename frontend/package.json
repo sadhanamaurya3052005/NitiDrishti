@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:offline": "node --experimental-strip-types --test lib/offline/kioskPolicy.test.ts lib/offline/kioskQueue.test.ts"
   },
   "dependencies": {
     "clsx": "^2.1.1",

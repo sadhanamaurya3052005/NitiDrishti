@@ -8,6 +8,7 @@ import {
   serviceWorkerSupported,
   setCatalogCacheOptOut,
 } from '@/lib/offline/catalogCache';
+import { bindKioskSyncListeners, requestKioskSync } from '@/lib/offline/kioskSync';
 
 interface PwaContextValue {
   online: boolean;
@@ -57,12 +58,17 @@ export function PwaProvider({ children }: { children: React.ReactNode }) {
     };
     window.addEventListener('beforeinstallprompt', onPrompt);
 
+    bindKioskSyncListeners();
     return () => {
       window.removeEventListener('online', on);
       window.removeEventListener('offline', off);
       window.removeEventListener('beforeinstallprompt', onPrompt);
     };
   }, []);
+
+  useEffect(() => {
+    if (online) requestKioskSync();
+  }, [online]);
 
   useEffect(() => {
     if (!serviceWorkerSupported()) {

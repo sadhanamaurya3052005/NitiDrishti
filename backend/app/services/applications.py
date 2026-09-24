@@ -36,6 +36,9 @@ class ApplicationService:
         stage: str | None = None,
         request_id: str,
     ) -> dict:
+        replayed = self._replay_same_request(user, request_id)
+        if replayed is not None:
+            return replayed
         chosen = stage or "Submitted"
         if chosen not in _CREATE_STAGES:
             raise ValidationError("New rows start at Discovered or Submitted. DBT is not auto-written.")
@@ -52,12 +55,13 @@ class ApplicationService:
             stage=chosen,
         )
         self.applications.add(row)
+        self.session.flush()
         self.audit.record(
             action="application_submit",
             actor_user_id=user.id,
             request_id=request_id,
             entity_type="applications",
-            entity_id=str(head.id),
+            entity_id=str(row.id),
             detail=chosen,
         )
         self.session.commit()
@@ -91,6 +95,20 @@ class ApplicationService:
         )
         self.session.commit()
         self.session.refresh(row)
+        return self._row_public(row)
+
+    def _replay_same_request(self, user: User, request_id: str) -> dict | None:
+        """Exact HTTP retry: same actor + X-Request-Id returns the first row, not a second insert."""
+        prior = self.audit.find_application_create(actor_user_id=user.id, request_id=request_id)
+        if prior is None or not prior.entity_id:
+            return None
+        try:
+            existing_id = UUID(prior.entity_id)
+        except ValueError:
+            return None
+        row = self.applications.get(existing_id)
+        if row is None or row.user_id != user.id:
+            return None
         return self._row_public(row)
 
     def _row_public(self, row: Application) -> dict:

@@ -9,7 +9,8 @@ from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.deps import CurrentUser, require_roles, request_id_of
+from app.core.deps import CurrentUser, request_id_of, require_roles, require_workspace
+from app.models.identity import User
 from app.schemas.citizen import ApplicationCreateRequest, ApplicationStageRequest
 from app.schemas.envelope import ok
 from app.services.applications import ApplicationService
@@ -17,6 +18,8 @@ from app.services.applications import ApplicationService
 router = APIRouter(prefix="/api/v1", tags=["applications"])
 
 DbSession = Annotated[Session, Depends(get_db)]
+OfficerQueue = Annotated[User, Depends(require_roles("WELFARE_OFFICER", "ADMIN"))]
+CitizenWriter = Annotated[User, Depends(require_workspace("citizen"))]
 
 
 @router.post("/applications", summary="Submit an application row (no identity digits)")
@@ -24,7 +27,7 @@ def create_application(
     payload: ApplicationCreateRequest,
     request: Request,
     db: DbSession,
-    user: CurrentUser,
+    user: CitizenWriter,
 ) -> dict:
     data = ApplicationService(db).create(
         user,
@@ -45,7 +48,7 @@ def list_applications(request: Request, db: DbSession, user: CurrentUser) -> dic
 def list_application_queue(
     request: Request,
     db: DbSession,
-    user=Depends(require_roles("WELFARE_OFFICER", "ADMIN")),
+    user: OfficerQueue,
 ) -> dict:
     return ok(ApplicationService(db).list_queue(user), request_id_of(request))
 
@@ -56,7 +59,7 @@ def record_application_stage(
     payload: ApplicationStageRequest,
     request: Request,
     db: DbSession,
-    user=Depends(require_roles("WELFARE_OFFICER", "ADMIN")),
+    user: OfficerQueue,
 ) -> dict:
     data = ApplicationService(db).record_official_stage(
         user,
