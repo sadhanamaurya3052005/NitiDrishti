@@ -78,6 +78,27 @@ class SchemeIngestionService:
             connector_type=spec.connector_type,
             department_id=department_id,
         )
+        if not source.is_active:
+            detail = json.dumps(
+                {
+                    "layer": "bronze",
+                    "stage": "inactive_skip",
+                    "note": "Source is_active=false; ingestion refused",
+                }
+            )
+            log_row = self.logs.start(source.id)
+            self.logs.finish(
+                log_row,
+                status="failed",
+                error_code="SOURCE_INACTIVE",
+                detail=detail,
+            )
+            return IngestResult(
+                source_url=spec.url,
+                status="failed",
+                error_code="SOURCE_INACTIVE",
+                detail=detail,
+            )
         log_row = self.logs.start(source.id)
         try:
             payload = connector_for(spec.connector_type, self.retrieve_fn).fetch(spec.url)

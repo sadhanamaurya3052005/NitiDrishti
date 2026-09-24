@@ -42,7 +42,7 @@ class SourceRepository(BaseRepository[Source]):
             return row
         row.name = name
         row.connector_type = connector_type
-        row.is_active = True
+        # Preserve admin-disabled sources; never silently re-activate on registry upsert.
         if department_id is not None:
             row.department_id = department_id
         self.session.flush()

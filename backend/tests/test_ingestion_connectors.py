@@ -37,6 +37,22 @@ def test_third_party_data_api_hosts_are_rejected() -> None:
         assert_whitelisted("https://schemeapi.example.com/v1/schemes")
 
 
+def test_localhost_and_private_hosts_are_rejected() -> None:
+    for url in (
+        "http://localhost/schemes",
+        "https://127.0.0.1/gazette",
+        "https://10.0.0.5/doc",
+        "https://192.168.1.10/page",
+        "https://[::1]/policy",
+        "ftp://pmkisan.gov.in/x",
+    ):
+        with pytest.raises(ValidationError):
+            assert_whitelisted(url)
+    assert not is_official_host("localhost")
+    assert not is_official_host("127.0.0.1")
+    assert not is_official_host("10.1.2.3")
+
+
 class _FakeResponse:
     def __init__(self, status_code: int, text: str) -> None:
         self.status_code = status_code
