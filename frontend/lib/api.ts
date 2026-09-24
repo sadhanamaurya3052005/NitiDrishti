@@ -204,16 +204,26 @@ export interface DossierRecord {
   created_at: string;
 }
 
-function unwrapCatalog(
-  payload: ApiEnvelope<CatalogPayload> | CatalogPayload,
-): CatalogPayload | null {
-  if ('data' in payload && payload.data && Array.isArray(payload.data.schemes)) {
-    return payload.data;
-  }
-  if ('schemes' in payload && Array.isArray(payload.schemes)) {
-    return payload;
-  }
-  return null;
+function catalogSchemes(value: unknown): SchemeRecord[] | null {
+  if (!Array.isArray(value)) return null;
+  return value as SchemeRecord[];
+}
+
+function unwrapCatalog(payload: unknown): CatalogPayload | null {
+  if (!payload || typeof payload !== 'object') return null;
+  const root = payload as Record<string, unknown>;
+  const nested = root.data;
+  const inner: Record<string, unknown> | null =
+    nested && typeof nested === 'object' && !Array.isArray(nested)
+      ? (nested as Record<string, unknown>)
+      : root;
+
+  const schemes = catalogSchemes(inner.schemes) ?? (Array.isArray(nested) ? catalogSchemes(nested) : null);
+  if (!schemes) return null;
+
+  const source = inner.source === 'postgres' || inner.source === 'static_fallback' ? inner.source : undefined;
+  const publishedCount = typeof inner.published_count === 'number' ? inner.published_count : undefined;
+  return { schemes, source, published_count: publishedCount };
 }
 
 export async function getSchemes(params?: {
@@ -222,24 +232,28 @@ export async function getSchemes(params?: {
 }): Promise<{ schemes: SchemeRecord[]; source: 'api' | 'catalog'; publishedCount?: number }> {
   const search = new URLSearchParams();
   if (params?.category && params.category !== 'all') search.set('category', params.category);
-  if (params?.q) search.set('q', params.q);
+  const query = params?.q?.trim();
+  if (query) search.set('q', query);
   const suffix = search.toString() ? `?${search.toString()}` : '';
-  const path = params?.q?.trim() ? `/api/v1/search/schemes${suffix}` : `/api/v1/schemes${suffix}`;
+  const path = query ? `/api/v1/search/schemes${suffix}` : `/api/v1/schemes${suffix}`;
 
   try {
-    const payload = await apiFetch<ApiEnvelope<CatalogPayload> | CatalogPayload>(path, {
+    const payload = await apiFetch<unknown>(path, {
       cache: 'no-store',
-      timeoutMs: 6000,
+      timeoutMs: 8000,
       skipAuth: true,
     });
     const data = unwrapCatalog(payload);
-    if (data) {
-      if (data.source === 'postgres') {
-        return { schemes: data.schemes, source: 'api', publishedCount: data.published_count };
-      }
-      if (data.schemes.length) {
-        return { schemes: data.schemes, source: 'api', publishedCount: data.published_count };
-      }
+    if (!data) {
+      return { schemes: [], source: 'catalog' };
+    }
+    // Postgres is the source of truth whenever the API says so — including an honest empty list.
+    if (data.source === 'postgres') {
+      return { schemes: data.schemes, source: 'api', publishedCount: data.published_count };
+    }
+    // Genuine static_fallback only when the API actually returned those rows.
+    if (data.schemes.length > 0) {
+      return { schemes: data.schemes, source: 'api', publishedCount: data.published_count };
     }
   } catch {
     /* Network/API failure — show an empty catalog, never invented rows. */

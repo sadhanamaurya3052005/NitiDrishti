@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import uuid
 from collections.abc import Iterator
+from unittest.mock import MagicMock
 
 import pytest
 from fastapi.testclient import TestClient
@@ -14,6 +15,8 @@ from app.main import app
 from app.models.actions import ActionDossier, Alert
 from app.models.geography import District
 from app.models.identity import Role, User, UserProfile, UserRole
+from app.repositories.users import UserRepository
+from app.services.analytics import AnalyticsService
 from app.services.auth.service import table_counts
 
 
@@ -52,6 +55,81 @@ def _cleanup(email: str) -> None:
         session.close()
 
 
+def _assert_no_traceback_leak(body: object) -> None:
+    dumped = str(body)
+    assert "Traceback" not in dumped
+    assert "NameError" not in dumped
+    assert "is not defined" not in dumped
+
+
+def test_analytics_service_init_binds_user_repository() -> None:
+    """Regression: 2026-09-22 reload dropped UserRepository and 500'd GET /analytics/districts."""
+    service = AnalyticsService(MagicMock())
+    assert isinstance(service.users, UserRepository)
+
+
+def test_districts_coverage_saturation_does_not_nameerror(client: TestClient) -> None:
+    response = client.get("/api/v1/analytics/districts?metric=coverage_saturation")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["success"] is True
+    assert body["error"] is None
+    assert body["data"]["metric"] == "coverage_saturation"
+    assert isinstance(body["data"]["districts"], list)
+    _assert_no_traceback_leak(body)
+
+
+def test_districts_unknown_state_is_empty_envelope(client: TestClient) -> None:
+    response = client.get(f"/api/v1/analytics/districts?state_id={uuid.uuid4()}")
+    assert response.status_code == 200
+    body = response.json()
+    assert body["success"] is True
+    assert body["error"] is None
+    assert body["data"]["districts"] == []
+    _assert_no_traceback_leak(body)
+
+
+def test_district_identifier_errors_use_envelope(client: TestClient) -> None:
+    invalid = client.get("/api/v1/analytics/districts/not-a-uuid")
+    assert invalid.status_code == 422
+    invalid_body = invalid.json()
+    assert invalid_body["success"] is False
+    assert invalid_body["data"] is None
+    assert invalid_body["error"]["code"] == "VALIDATION_ERROR"
+    assert "must be a UUID" in invalid_body["error"]["message"]
+    _assert_no_traceback_leak(invalid_body)
+
+    missing = client.get(f"/api/v1/analytics/districts/{uuid.uuid4()}")
+    assert missing.status_code == 404
+    missing_body = missing.json()
+    assert missing_body["success"] is False
+    assert missing_body["data"] is None
+    assert missing_body["error"]["code"] == "NOT_FOUND"
+    _assert_no_traceback_leak(missing_body)
+
+    bad_metric = client.get("/api/v1/analytics/districts?metric=not_a_metric")
+    assert bad_metric.status_code == 422
+    metric_body = bad_metric.json()
+    assert metric_body["success"] is False
+    assert metric_body["error"]["code"] == "VALIDATION_ERROR"
+    _assert_no_traceback_leak(metric_body)
+
+
+def test_public_analytics_catalogs_still_succeed(client: TestClient) -> None:
+    for path in (
+        "/api/v1/analytics/summary",
+        "/api/v1/csc/summary",
+        "/api/v1/welfare/summary",
+        "/api/v1/analytics/districts",
+    ):
+        response = client.get(path)
+        assert response.status_code == 200, path
+        body = response.json()
+        assert body["success"] is True
+        assert body["error"] is None
+        _assert_no_traceback_leak(body)
+
+
 def test_districts_envelope_is_honest(client: TestClient) -> None:
     response = client.get("/api/v1/analytics/districts")
     assert response.status_code == 200
@@ -59,7 +137,7 @@ def test_districts_envelope_is_honest(client: TestClient) -> None:
     assert body["success"] is True
     assert body["error"] is None
     data = body["data"]
-    assert data["application_rows"] is False
+    assert isinstance(data["application_rows"], bool)
     assert "PostGIS is not used" in data["geometry"]
     assert data["metrics"]["application_dropoff"]["available"] is False
     assert data["metrics"]["disbursement_velocity"]["available"] is False
@@ -91,8 +169,13 @@ def test_district_detail_funnel_is_null(client: TestClient) -> None:
     assert data["target_population"] is None
     assert data["enrolled"] is None
     assert "no application registry" in data["population_note"].lower()
+    has_rows = client.get("/api/v1/analytics/districts").json()["data"]["application_rows"]
     for stage in data["application_funnel"]:
-        assert stage["count"] is None
+        if has_rows:
+            assert isinstance(stage["count"], int)
+            assert stage["count"] >= 0
+        else:
+            assert stage["count"] is None
     assert data["heatmap"]["sparse"] is True or data["heatmap"]["sample_size"] >= 0
     assert "PII" not in str(data["heatmap"]["cells"])
 

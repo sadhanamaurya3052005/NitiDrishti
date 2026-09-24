@@ -37,24 +37,23 @@ export function SchemeDirectory({ embedded = false }: { embedded?: boolean }) {
   const [state, setState] = useState('all');
   const [schemes, setSchemes] = useState<SchemeRecord[]>([]);
   const [fromApi, setFromApi] = useState(false);
+  const [catalogReady, setCatalogReady] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
   const schemeIds = useMemo(() => schemes.map((item) => item.id), [schemes]);
   const { byId, status: engineStatus } = useServerEvaluations(schemeIds, profile);
 
   useEffect(() => {
-    const input = document.getElementById('scheme-search');
-    const onInput = (event: Event) => setQuery((event.target as HTMLInputElement).value);
-    input?.addEventListener('input', onInput);
-    return () => input?.removeEventListener('input', onInput);
-  }, []);
-
-  useEffect(() => {
     let cancelled = false;
-    void getSchemes({ category, q: query }).then((result) => {
-      if (cancelled) return;
-      setSchemes(result.schemes);
-      setFromApi(result.source === 'api');
-    });
+    setCatalogReady(false);
+    void getSchemes({ category, q: query })
+      .then((result) => {
+        if (cancelled) return;
+        setSchemes(Array.isArray(result.schemes) ? result.schemes : []);
+        setFromApi(result.source === 'api');
+      })
+      .finally(() => {
+        if (!cancelled) setCatalogReady(true);
+      });
     return () => {
       cancelled = true;
     };
@@ -170,11 +169,11 @@ export function SchemeDirectory({ embedded = false }: { embedded?: boolean }) {
           {engineStatus === 'error' ? (
             <p className="mt-6 text-sm text-ink-muted">{desk.eligibility.engineDown}</p>
           ) : null}
-          {visible.length === 0 ? (
+          {catalogReady && visible.length === 0 ? (
           <p className="mt-10 text-sm text-ink-muted">
             {query.trim() ? home.schemes.empty : home.schemes.emptyCatalog}
           </p>
-        ) : (
+        ) : visible.length === 0 ? null : (
           <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {visible.map((scheme) => {
               const evaluation = byId[scheme.id];
@@ -197,7 +196,7 @@ export function SchemeDirectory({ embedded = false }: { embedded?: boolean }) {
                     {benefit}
                   </p>
                   <ul className="mt-4 flex flex-wrap gap-1.5">
-                    {scheme.documents.map((doc) => {
+                    {(scheme.documents ?? []).map((doc) => {
                       const known = profile.documents[doc.id];
                       const tone = known === true ? 'ok' : known === false ? 'missing' : 'unknown';
                       return (

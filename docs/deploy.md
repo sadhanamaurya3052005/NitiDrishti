@@ -1,7 +1,8 @@
 # Deploy notes (academic 2026–27, SIH260092)
 
 NitiDrishti is a college / SIH project, not a live sarkari portal. There is no production
-URL to publish here. Native PostgreSQL is required; **PostGIS is not required**. Docker is
+URL to publish here. Native PostgreSQL is required; **PostGIS is not required** (maps use
+bundled TopoJSON). **pgvector is not required** (semantic search is future-ready). Docker is
 not part of the local or suggested remote story.
 
 ## Frontend (Vercel or similar)
@@ -17,7 +18,9 @@ not part of the local or suggested remote story.
 
 1. Native Python 3.11+ and native PostgreSQL 16/18 on the VM (or a managed Postgres URL).
 2. Copy `.env.example` → `.env`. Replace `JWT_SECRET_KEY` and `POSTGRES_PASSWORD`.
-3. `cd backend` → venv → `pip install -r requirements.txt` → `python -m scripts.init_extensions`
+   Set `POSTGRES_DB` to the database you created (documented local name: `nitidrishti_db`)
+   or set `DATABASE_URL` as an optional override of the `POSTGRES_*` parts.
+3. `cd backend` → venv. On Windows, if `pip` TLS fails, unset `CURL_CA_BUNDLE` (Postgres/Git often point it at a missing file) then `pip install -r requirements.txt` → `python -m scripts.init_extensions`
    → `alembic upgrade head` → `python -m scripts.seed_reference` →
    `python -m scripts.bootstrap_operators`.
 4. Run: `uvicorn app.main:app --host 0.0.0.0 --port 8000` (put nginx/caddy in front for TLS).

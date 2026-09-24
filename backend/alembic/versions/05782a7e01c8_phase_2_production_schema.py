@@ -9,9 +9,10 @@ from __future__ import annotations
 
 from collections.abc import Sequence
 
-from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
+
+from alembic import op
 
 revision: str = '05782a7e01c8'
 down_revision: str | None = None
@@ -229,8 +230,7 @@ def upgrade() -> None:
     sa.Column('role_id', sa.Uuid(), nullable=False),
     sa.ForeignKeyConstraint(['role_id'], ['roles.id'], name=op.f('fk_user_roles_role_id_roles'), ondelete='CASCADE'),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], name=op.f('fk_user_roles_user_id_users'), ondelete='CASCADE'),
-    sa.PrimaryKeyConstraint('user_id', 'role_id', name=op.f('pk_user_roles')),
-    sa.UniqueConstraint('user_id', 'role_id', name=op.f('uq_user_roles_user_id'))
+    sa.PrimaryKeyConstraint('user_id', 'role_id', name=op.f('pk_user_roles'))
     )
     op.create_table('action_dossiers',
     sa.Column('user_id', sa.Uuid(), nullable=False),

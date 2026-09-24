@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, Query, Request
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.deps import require_roles, request_id_of
+from app.core.deps import request_id_of, require_roles
 from app.models.identity import User
 from app.schemas.admin import RoleAssignmentRequest, UserStatusRequest
 from app.schemas.envelope import ok

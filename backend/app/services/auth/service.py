@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime
 from typing import Any
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from sqlalchemy import delete, func, select
 from sqlalchemy.exc import IntegrityError
@@ -20,6 +20,7 @@ from app.core.security import (
     needs_rehash,
     verify_password,
 )
+from app.core.token_revoke import jti_is_revoked, revoke_jti, revoke_sid, sid_is_revoked
 from app.models.actions import ActionDossier, Alert, AuditLog
 from app.models.applications import Application
 from app.models.identity import User, UserProfile, UserRole
@@ -83,9 +84,10 @@ def to_public(user: User) -> UserPublic:
 
 def issue_tokens(user: User) -> TokenBundle:
     roles = _role_codes(user)
+    sid = str(uuid4())
     return TokenBundle(
-        access_token=create_token(user.id, token_type="access", roles=roles),
-        refresh_token=create_token(user.id, token_type="refresh"),
+        access_token=create_token(user.id, token_type="access", roles=roles, sid=sid),
+        refresh_token=create_token(user.id, token_type="refresh", sid=sid),
         expires_in=access_expires_seconds(),
         user=to_public(user),
     )
@@ -156,7 +158,30 @@ class AuthService:
         self.session.commit()
         return issue_tokens(user)
 
-    def logout(self, user: User, *, request_id: str) -> dict[str, bool]:
+    def assert_token_active(self, payload: dict[str, Any]) -> None:
+        if jti_is_revoked(payload.get("jti")) or sid_is_revoked(payload.get("sid")):
+            raise AuthError("Not authenticated")
+        sub = payload.get("sub")
+        iat = payload.get("iat")
+        if not sub or iat is None:
+            raise AuthError("Invalid token")
+        cutoff = self.audit.latest_logout_at(UUID(str(sub)))
+        if cutoff is None:
+            return
+        try:
+            issued = int(iat)
+        except (TypeError, ValueError) as exc:
+            raise AuthError("Invalid token") from exc
+        if issued < int(cutoff.timestamp()):
+            raise AuthError("Not authenticated")
+
+    def logout(self, user: User, *, request_id: str, access_token: str | None = None) -> dict[str, bool]:
+        if access_token:
+            payload = decode_token(access_token, expected_type="access")
+            jti = payload.get("jti")
+            sid = payload.get("sid")
+            revoke_jti(jti if isinstance(jti, str) else None, payload.get("exp"))
+            revoke_sid(sid if isinstance(sid, str) else None)
         self.audit.record(
             action="logout",
             actor_user_id=user.id,
@@ -170,6 +195,7 @@ class AuthService:
 
     def refresh(self, refresh_token: str) -> TokenBundle:
         payload = decode_token(refresh_token, expected_type="refresh")
+        self.assert_token_active(payload)
         user = self.require_user(UUID(str(payload["sub"])))
         return issue_tokens(user)
 

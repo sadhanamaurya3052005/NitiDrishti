@@ -18,11 +18,13 @@ from app.config import settings
 from app.core.database import engine
 
 # (extension, why we need it, required?)
+# PostGIS and pgvector are OPTIONAL / FUTURE. Native PostgreSQL 18 does not
+# ship them; maps use bundled TopoJSON and document_embeddings has no VECTOR column.
 EXTENSIONS: list[tuple[str, str, bool]] = [
-    ("postgis", "district geometry for the analytics cockpit", False),
+    ("postgis", "OPTIONAL / NOT REQUIRED — maps use bundled TopoJSON, not PostGIS", False),
     ("pg_trgm", "fuzzy title matching during deduplication", True),
     ("unaccent", "accent-insensitive bilingual search", True),
-    ("vector", "semantic search embeddings", False),
+    ("vector", "OPTIONAL / FUTURE — semantic search; not installed on native Postgres", False),
 ]
 
 

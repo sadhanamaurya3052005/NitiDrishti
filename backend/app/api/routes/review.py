@@ -8,7 +8,7 @@ from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.core.deps import require_roles, request_id_of
+from app.core.deps import request_id_of, require_roles
 from app.schemas.citizen import ReviewActionRequest
 from app.schemas.envelope import ok
 from app.services.schemes import SchemeCatalogService

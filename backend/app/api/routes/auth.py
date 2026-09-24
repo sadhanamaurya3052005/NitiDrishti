@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Request
 
-from app.core.deps import CurrentAuthService, CurrentUser, request_id_of
+from app.core.deps import BearerCreds, CurrentAuthService, CurrentUser, request_id_of
 from app.schemas.auth import LoginRequest, ProfileUpdateRequest, RefreshRequest, RegisterRequest
 from app.schemas.envelope import ok
 from app.services.auth.service import to_public
@@ -34,8 +34,17 @@ def refresh(payload: RefreshRequest, request: Request, service: CurrentAuthServi
 
 
 @router.post("/logout")
-def logout(request: Request, user: CurrentUser, service: CurrentAuthService) -> dict:
-    return ok(service.logout(user, request_id=request_id_of(request)), request_id_of(request))
+def logout(
+    request: Request,
+    user: CurrentUser,
+    service: CurrentAuthService,
+    credentials: BearerCreds,
+) -> dict:
+    token = credentials.credentials if credentials else None
+    return ok(
+        service.logout(user, request_id=request_id_of(request), access_token=token),
+        request_id_of(request),
+    )
 
 
 @router.get("/me")

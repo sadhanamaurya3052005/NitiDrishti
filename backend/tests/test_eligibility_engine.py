@@ -134,3 +134,123 @@ def test_refold_fail_dominates() -> None:
         ],
     )
     assert folded.status == "INELIGIBLE"
+
+
+def _or_age_or_category() -> RuleSpec:
+    return RuleSpec(
+        rule_key="alt",
+        kind="age",
+        label="Age or reserved category",
+        ast_json={
+            "op": "or",
+            "children": [
+                {"op": "gte", "field": "age", "value": 18},
+                {"op": "eq", "field": "category", "value": "SC"},
+            ],
+        },
+    )
+
+
+def test_ast_or_pass_dominates() -> None:
+    rule = _or_age_or_category()
+    assert evaluate_rule(rule, _profile(age=22, category="GEN")).verdict == "pass"
+    assert evaluate_rule(rule, _profile(age=12, category="SC")).verdict == "pass"
+    assert evaluate_rule(rule, _profile(age=22, category=None)).verdict == "pass"
+
+
+def test_ast_or_unknown_when_no_pass() -> None:
+    rule = _or_age_or_category()
+    assert evaluate_rule(rule, _profile(age=12, category=None)).verdict == "unknown"
+    assert evaluate_rule(rule, _profile(age=None, category="GEN")).verdict == "unknown"
+    assert evaluate_rule(rule, _profile(age=None, category=None)).verdict == "unknown"
+
+
+def test_ast_or_all_fail() -> None:
+    rule = _or_age_or_category()
+    failed = evaluate_rule(rule, _profile(age=12, category="GEN"))
+    assert failed.verdict == "fail"
+    assert " or " in failed.explanation
+
+
+def test_ast_or_does_not_mutate_unrelated_rule() -> None:
+    or_rule = _or_age_or_category()
+    other = RuleSpec(
+        rule_key="income",
+        kind="income",
+        label="Income cap",
+        ast_json={"op": "lte", "field": "income", "value": 100000},
+        income_limit=100000,
+    )
+    or_children = or_rule.ast_json["children"]
+    other_ast = other.ast_json
+    lone = evaluate_rule(other, _profile(income=50000))
+
+    together = evaluate_scheme_rules(
+        "combo",
+        [or_rule, other],
+        _profile(age=22, category="GEN", income=50000),
+    )
+
+    assert or_rule.ast_json["children"] is or_children
+    assert or_children == [
+        {"op": "gte", "field": "age", "value": 18},
+        {"op": "eq", "field": "category", "value": "SC"},
+    ]
+    assert other.ast_json is other_ast
+    assert other.ast_json == {"op": "lte", "field": "income", "value": 100000}
+    assert other.income_limit == 100000
+    assert together.rules[1].id == "income"
+    assert together.rules[1].verdict == lone.verdict
+    assert together.rules[1].explanation == lone.explanation
+    assert evaluate_rule(other, _profile(income=50000)).verdict == lone.verdict
+
+
+def test_ast_or_nested() -> None:
+    rule = RuleSpec(
+        rule_key="nested",
+        kind="age",
+        label="Senior or reserved or income",
+        ast_json={
+            "op": "or",
+            "children": [
+                {
+                    "op": "or",
+                    "children": [
+                        {"op": "gte", "field": "age", "value": 60},
+                        {"op": "eq", "field": "category", "value": "SC"},
+                    ],
+                },
+                {"op": "lte", "field": "income", "value": 100000},
+            ],
+        },
+    )
+    assert evaluate_rule(rule, _profile(age=65, category="GEN", income=200000)).verdict == "pass"
+    assert evaluate_rule(rule, _profile(age=30, category="SC", income=200000)).verdict == "pass"
+    assert evaluate_rule(rule, _profile(age=30, category="GEN", income=80000)).verdict == "pass"
+    assert evaluate_rule(rule, _profile(age=30, category="GEN", income=None)).verdict == "unknown"
+    assert evaluate_rule(rule, _profile(age=30, category="GEN", income=200000)).verdict == "fail"
+
+
+def test_ast_or_scheme_score_and_status() -> None:
+    or_rule = _or_age_or_category()
+    always = RuleSpec(rule_key="exclusion", kind="always", label="Source exclusion")
+
+    eligible = evaluate_scheme_rules("alt-scheme", [or_rule], _profile(age=22, category="GEN"))
+    assert eligible.status == "ELIGIBLE"
+    assert eligible.score == 100
+    assert eligible.rules[0].verdict == "pass"
+
+    partial = evaluate_scheme_rules("alt-scheme", [or_rule, always], _profile(age=22, category="GEN"))
+    assert partial.status == "PARTIAL_INFO"
+    assert partial.score == 50
+    assert [item.verdict for item in partial.rules] == ["pass", "unknown"]
+
+    unknown = evaluate_scheme_rules("alt-scheme", [or_rule], _profile(age=12, category=None))
+    assert unknown.status == "PARTIAL_INFO"
+    assert unknown.score == 0
+    assert unknown.rules[0].verdict == "unknown"
+
+    ineligible = evaluate_scheme_rules("alt-scheme", [or_rule], _profile(age=12, category="GEN"))
+    assert ineligible.status == "INELIGIBLE"
+    assert ineligible.score == 0
+    assert ineligible.rules[0].verdict == "fail"

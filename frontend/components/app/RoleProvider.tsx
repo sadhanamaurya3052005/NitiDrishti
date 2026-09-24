@@ -38,8 +38,9 @@ export function RoleProvider({ children }: { children: React.ReactNode }) {
       window.localStorage.setItem(PREVIEW_ROLE_STORAGE_KEY, serverRole);
       return;
     }
-    if (!session) return;
-    const next = previewRoleForSession(session.mode);
+    const mode = session?.mode;
+    if (!mode) return;
+    const next = previewRoleForSession(mode);
     setRoleState(next);
     window.localStorage.setItem(PREVIEW_ROLE_STORAGE_KEY, next);
   }, [serverRole, session?.mode]);

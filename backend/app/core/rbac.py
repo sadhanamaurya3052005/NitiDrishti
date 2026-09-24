@@ -10,7 +10,7 @@ from collections.abc import Iterable
 
 from app.core.exceptions import ForbiddenError
 
-# Matches the role × workspace table in docs/api-contracts.md.
+# Matches the role x workspace table in docs/api-contracts.md.
 WORKSPACE_ROLES: dict[str, frozenset[str]] = {
     "citizen": frozenset({"CITIZEN", "STUDENT", "CSC_OPERATOR", "ADMIN"}),
     "csc": frozenset({"CSC_OPERATOR", "ADMIN"}),

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Any
 
@@ -16,15 +17,26 @@ def _ocr_flag() -> dict[str, Any]:
 
         return tesseract_status()
     except Exception as exc:
-        return {"available": False, "engine": None, "reason": type(exc).__name__}
+        return {
+            "available": False,
+            "optional": True,
+            "status": "unavailable",
+            "engine": None,
+            "reason": type(exc).__name__,
+        }
 
 
 def check_storage() -> dict[str, Any]:
+    """Observe configured raw storage. Never create directories (ingestion persist_snapshot does)."""
     path = Path(settings.raw_storage_path)
     try:
-        path.mkdir(parents=True, exist_ok=True)
-        writable = path.is_dir()
-        return {"ok": writable, "path": str(path), "error": None if writable else "not_a_directory"}
+        if not path.exists():
+            return {"ok": False, "path": str(path), "error": "missing"}
+        if not path.is_dir():
+            return {"ok": False, "path": str(path), "error": "not_a_directory"}
+        if not os.access(path, os.W_OK):
+            return {"ok": False, "path": str(path), "error": "not_writable"}
+        return {"ok": True, "path": str(path), "error": None}
     except OSError as exc:
         return {"ok": False, "path": str(path), "error": type(exc).__name__}
 

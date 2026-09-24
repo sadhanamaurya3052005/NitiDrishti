@@ -71,6 +71,7 @@ class Settings(BaseSettings):
     # ── Database ─────────────────────────────────────────────
     postgres_user: str = "nitidrishti"
     postgres_password: str = "change_me_locally"
+    # Fallback if POSTGRES_DB is unset. Documented local database name is nitidrishti_db.
     postgres_db: str = "nitidrishti_dev"
     postgres_host: str = "localhost"
     postgres_port: int = 5432

@@ -7,7 +7,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, File, Request, UploadFile
 
 from app.config import settings
-from app.core.deps import require_roles, request_id_of
+from app.core.deps import request_id_of, require_roles
 from app.core.exceptions import ValidationError
 from app.schemas.envelope import ok
 from app.services.ingestion.ocr import ocr_scanned_document
@@ -21,7 +21,7 @@ Officer = Annotated[object, Depends(require_roles("POLICY_ANALYST", "WELFARE_OFF
 async def preview_ocr(
     request: Request,
     user: Officer,
-    file: UploadFile = File(...),
+    file: Annotated[UploadFile, File()],
 ) -> dict:
     del user
     raw = await file.read()

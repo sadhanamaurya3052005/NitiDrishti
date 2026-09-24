@@ -183,9 +183,7 @@ def effective_on(version: PolicyVersion, as_of: date) -> bool:
     end = version.effective_to
     if start is not None and as_of < start:
         return False
-    if end is not None and as_of > end:
-        return False
-    return True
+    return end is None or as_of <= end
 
 
 def pick_in_force(versions: list[PolicyVersion], as_of: date) -> PolicyVersion | None:

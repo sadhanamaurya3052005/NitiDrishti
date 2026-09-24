@@ -25,6 +25,18 @@ def test_assert_whitelisted_rejects_non_official() -> None:
     assert assert_whitelisted("https://vikaspedia.in/schemesall") == "vikaspedia.in"
 
 
+def test_third_party_data_api_hosts_are_rejected() -> None:
+    """Core ingestion fetches official pages directly — not commercial or aggregator APIs."""
+    assert not is_official_host("rapidapi.com")
+    assert not is_official_host("api.openai.com")
+    assert not is_official_host("scraperapi.com")
+    assert not is_official_host("scrapingbee.com")
+    with pytest.raises(ValidationError):
+        assert_whitelisted("https://api.openai.com/v1/chat/completions")
+    with pytest.raises(ValidationError):
+        assert_whitelisted("https://schemeapi.example.com/v1/schemes")
+
+
 class _FakeResponse:
     def __init__(self, status_code: int, text: str) -> None:
         self.status_code = status_code
