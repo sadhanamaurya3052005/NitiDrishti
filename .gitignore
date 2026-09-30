@@ -36,6 +36,7 @@ storage/raw/
 storage/silver/
 storage/processed/
 storage/tmp/
+storage/tmp_*
 storage/backups/
 !storage/.gitkeep
 
@@ -43,7 +44,11 @@ storage/backups/
 dbt/target/
 dbt/logs/
 dbt/dbt_packages/
+dbt/.user.yml
 airflow/logs/
+
+# Editor and agent backups
+*.bak
 
 # Local PDF/doc extracts used while reading specs — not product source
 .pdf-extract/
