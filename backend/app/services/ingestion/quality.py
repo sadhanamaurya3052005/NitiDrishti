@@ -38,10 +38,13 @@ def apply_quality(scheme: NormalizedScheme, *, retrieved_at: datetime | None = N
             flags.append("stale_document")
 
     scheme.quality_flags = flags
+    # Blocking gaps never auto-publish to the public catalog; HITL /review is required.
+    # High-confidence extraction alone is not enough when rules or identity are missing.
     blocking = {
         "missing_scheme_name",
         "missing_provenance",
         "thin_summary",
+        "no_rules",
         "invalid_age",
         "invalid_income",
         "inconsistent_age_window",

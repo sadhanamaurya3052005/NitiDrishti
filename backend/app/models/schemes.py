@@ -72,6 +72,7 @@ class SchemeVersion(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     last_verified_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     effective_from: Mapped[date | None] = mapped_column(Date, nullable=True)
     effective_to: Mapped[date | None] = mapped_column(Date, nullable=True)
+    governance: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
     scheme: Mapped[Scheme] = relationship(back_populates="versions", foreign_keys=[scheme_id])
     rules: Mapped[list[EligibilityRule]] = relationship(back_populates="scheme_version")

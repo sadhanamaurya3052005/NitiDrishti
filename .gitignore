@@ -22,9 +22,8 @@ yarn-error.log*
 __pycache__/
 *.py[cod]
 *$py.class
-.venv/
-venv/
-env/
+# Local tooling venvs (not application runtime)
+.venv-dbt/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
@@ -34,10 +33,17 @@ coverage.xml
 
 # Ingestion artifacts (raw government snapshots are large + regenerable)
 storage/raw/
+storage/silver/
 storage/processed/
 storage/tmp/
 storage/backups/
 !storage/.gitkeep
+
+# dbt / Airflow local artifacts
+dbt/target/
+dbt/logs/
+dbt/dbt_packages/
+airflow/logs/
 
 # Local PDF/doc extracts used while reading specs — not product source
 .pdf-extract/

@@ -49,3 +49,10 @@ def get_scheme(scheme_id: str, request: Request, db: DbSession) -> dict:
 def list_scheme_versions(scheme_id: str, request: Request, db: DbSession) -> dict:
     items = SchemeCatalogService(db).list_versions(scheme_id)
     return ok({"versions": items}, _request_id(request))
+
+
+@router.get("/schemes/{scheme_id}/lineage", summary="Machine-readable provenance lineage")
+def scheme_lineage(scheme_id: str, request: Request, db: DbSession) -> dict:
+    from app.services.ingestion.lineage import scheme_lineage as build_lineage
+
+    return ok(build_lineage(db, scheme_id), _request_id(request))

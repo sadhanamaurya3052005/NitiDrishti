@@ -116,6 +116,10 @@ class IngestionLogRepository(BaseRepository[IngestionLog]):
         detail: str | None = None,
         rows_upserted: int = 0,
         content_hash: str | None = None,
+        failure_class: str | None = None,
+        retryable: bool | None = None,
+        failure_stage: str | None = None,
+        duration_ms: int | None = None,
     ) -> None:
         row.finished_at = datetime.now(UTC)
         row.status = status
@@ -124,7 +128,25 @@ class IngestionLogRepository(BaseRepository[IngestionLog]):
         row.detail = detail
         row.rows_upserted = rows_upserted
         row.content_hash = content_hash
+        row.failure_class = failure_class
+        row.retryable = retryable
+        row.failure_stage = failure_stage
+        row.duration_ms = duration_ms
         self.session.flush()
+
+    def count_by_status(self) -> dict[str, int]:
+        rows = self.session.execute(
+            select(IngestionLog.status, func.count()).group_by(IngestionLog.status)
+        ).all()
+        return {str(status): int(count) for status, count in rows}
+
+    def count_failure_classes(self) -> dict[str, int]:
+        rows = self.session.execute(
+            select(IngestionLog.failure_class, func.count())
+            .where(IngestionLog.status == "failed")
+            .group_by(IngestionLog.failure_class)
+        ).all()
+        return {(str(klass) if klass else "UNKNOWN_FAILED"): int(count) for klass, count in rows}
 
     def latest_for_source(self, source_id: UUID) -> IngestionLog | None:
         stmt = (

@@ -9,7 +9,7 @@ SOURCE REGISTRY (`sources`)
         ↓  html | pdf | tabular | json | optional Playwright
 INGESTION / CRAWLING
         ↓
-BRONZE  storage/raw/{source_id}/{date}/{sha256}.*  + `source_documents`
+BRONZE  MinIO nitidrishti-raw/{source_id}/{date}/{sha256}.*  (or storage/raw fallback)  + `source_documents`
         ↓  same SHA → skip (no overwrite)
 VALIDATION + QUALITY FLAGS
         ↓
@@ -26,7 +26,25 @@ GOLD  published `scheme_versions` + `eligibility_rules.ast_json`
 POSTGRESQL → FASTAPI → Citizen / CSC / Nyay-Mitra / Welfare / Admin
 ```
 
-Live counts: `GET /api/v1/pipeline`. Orchestrator is **APScheduler** (`INGEST_INTERVAL_HOURS`). Airflow is **not** implemented.
+Live counts: `GET /api/v1/pipeline`. Orchestrator is **Apache Airflow** (`PIPELINE_ORCHESTRATOR=airflow`, DAG `nitidrishti_ingestion_pipeline`). APScheduler is disabled in-process when Airflow is selected (no dual scheduler). See `docs/data-engineering.md`.
+
+RAW: MinIO bucket `nitidrishti-raw` when `MINIO_ENDPOINT` is set; otherwise filesystem `storage/raw/{source_id}/{date}/{sha256}.*` (legacy-compatible).
+
+Lineage: `GET /api/v1/schemes/{id}/lineage`.
+
+## Step 7.1 hardening (additive)
+
+| Concern | Implementation |
+|---|---|
+| Source health | Rollup columns on `sources` (`health_status`, consecutive failures, last success/failure). History remains in `ingestion_logs`. |
+| DQ score | Deterministic `dq-v1` components stored on `scheme_versions.governance` JSON. Not eligibility. |
+| Freshness | `FRESH` / `EXPIRING` / `STALE` / `EXPIRED` / `UNKNOWN` — never invent FRESH from `retrieved_at` alone. |
+| Change class | `NO_CHANGE` / `MINOR_CHANGE` / `MATERIAL_CHANGE` / `STRUCTURAL_CHANGE` (heuristic over fingerprints). Material/structural → HITL. |
+| Confidence split | `extraction_confidence` ≠ `rule_validation_status` ≠ AST verdict. |
+| Layer contracts | Pydantic bronze / silver / gold / AST guards in `contracts.py`. |
+| Failure taxonomy | Explicit classes on logs + dead-letter enrichment (`ROBOTS_DENIED`, `HTTP_4XX`, …). |
+| Metrics | Derived from real logs in `/api/v1/pipeline`. |
+| Airflow | **IMPLEMENTED** — sole orchestrator when `PIPELINE_ORCHESTRATOR=airflow`. |
 
 Original flow (unchanged):
 

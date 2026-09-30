@@ -41,10 +41,13 @@ def _in_test_process() -> bool:
 
 
 def scheduler_should_run() -> bool:
-    """Never crawl from pytest or APP_ENV=testing, even if the env flag is on."""
+    """Never crawl from pytest/testing, and never when Airflow is the orchestrator."""
     if _in_test_process():
         return False
     if settings.app_env == "testing":
+        return False
+    orchestrator = (settings.pipeline_orchestrator or "airflow").strip().lower()
+    if orchestrator == "airflow":
         return False
     return bool(settings.ingest_scheduler_enabled)
 
@@ -152,7 +155,13 @@ def start_background_scheduler() -> BackgroundScheduler | None:
             "ingest_scheduler_idle",
             enabled=settings.ingest_scheduler_enabled,
             app_env=settings.app_env,
-            note="Batch refresh is off in this process (pytest / APP_ENV=testing, or flag false).",
+            orchestrator=settings.pipeline_orchestrator,
+            note=(
+                "APScheduler disabled: Airflow is the sole pipeline orchestrator "
+                "(set PIPELINE_ORCHESTRATOR=apscheduler only for legacy local-only)."
+                if (settings.pipeline_orchestrator or "").strip().lower() == "airflow"
+                else "Batch refresh is off in this process (pytest / APP_ENV=testing, or flag false)."
+            ),
         )
         return None
     hours = ingest_interval_hours()

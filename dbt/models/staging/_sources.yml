@@ -1,0 +1,13 @@
+version: 2
+
+sources:
+  - name: nitidrishti_app
+    description: Application PostgreSQL tables owned by FastAPI (not replaced by dbt).
+    schema: public
+    tables:
+      - name: sources
+      - name: source_documents
+      - name: schemes
+      - name: scheme_versions
+      - name: eligibility_rules
+      - name: ingestion_logs

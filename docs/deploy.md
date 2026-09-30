@@ -2,8 +2,9 @@
 
 NitiDrishti is a college / SIH project, not a live sarkari portal. There is no production
 URL to publish here. Native PostgreSQL is required; **PostGIS is not required** (maps use
-bundled TopoJSON). **pgvector is not required** (semantic search is future-ready). Docker is
-not part of the local or suggested remote story.
+bundled TopoJSON). **pgvector is not required** (semantic search is future-ready). Application
+API/UI remain native processes; optional DE stack (`docker compose up -d` for MinIO + Airflow)
+is documented in `docs/data-engineering.md`. CD to a live portal is not configured.
 
 ## Frontend (Vercel or similar)
 
@@ -24,8 +25,8 @@ not part of the local or suggested remote story.
    → `alembic upgrade head` → `python -m scripts.seed_reference` →
    `python -m scripts.bootstrap_operators`.
 4. Run: `uvicorn app.main:app --host 0.0.0.0 --port 8000` (put nginx/caddy in front for TLS).
-5. CORS must list the real frontend origin. `FEATURE_DISASTER_MODULE` stays off unless you
-   want the catalog DSS strip.
+5. Set `PIPELINE_ORCHESTRATOR=airflow` and run pipeline via Airflow (Compose) or
+   `python -m scripts.pipeline_stages …`. Do not run APScheduler alongside Airflow.
 
 ## Backup drill
 

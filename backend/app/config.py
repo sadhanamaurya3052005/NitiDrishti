@@ -104,6 +104,20 @@ class Settings(BaseSettings):
     ingest_interval_hours: int = 24
     raw_storage_path: str = "./storage/raw"
 
+    # Pipeline orchestrator: airflow (Docker) | apscheduler (legacy local only).
+    # When "airflow", the FastAPI process must NOT start APScheduler.
+    pipeline_orchestrator: str = Field(
+        default="airflow",
+        validation_alias=AliasChoices("PIPELINE_ORCHESTRATOR", "pipeline_orchestrator"),
+    )
+
+    # MinIO / S3-compatible RAW (empty endpoint = filesystem fallback)
+    minio_endpoint: str = ""
+    minio_access_key: str = "minioadmin"
+    minio_secret_key: str = "minioadmin"
+    minio_bucket: str = "nitidrishti-raw"
+    minio_secure: bool = False
+
     # Feature flags — OCR runs only when FEATURE_AI_EXTRACTION is true *and* Tesseract exists.
     feature_ai_extraction: bool = False
     feature_disaster_module: bool = False

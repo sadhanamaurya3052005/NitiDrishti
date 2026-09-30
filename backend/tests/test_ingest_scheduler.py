@@ -37,14 +37,27 @@ def test_scheduler_stays_off_when_testing_env() -> None:
 
 
 def test_scheduler_follows_enabled_flag_outside_tests() -> None:
+    """Legacy APScheduler only when PIPELINE_ORCHESTRATOR=apscheduler."""
     with (
         patch("app.services.ingestion.scheduler._in_test_process", return_value=False),
         patch("app.services.ingestion.scheduler.settings") as mocked,
     ):
         mocked.app_env = "development"
+        mocked.pipeline_orchestrator = "apscheduler"
         mocked.ingest_scheduler_enabled = True
         assert scheduler_should_run() is True
         mocked.ingest_scheduler_enabled = False
+        assert scheduler_should_run() is False
+
+
+def test_scheduler_off_when_airflow_is_orchestrator() -> None:
+    with (
+        patch("app.services.ingestion.scheduler._in_test_process", return_value=False),
+        patch("app.services.ingestion.scheduler.settings") as mocked,
+    ):
+        mocked.app_env = "development"
+        mocked.pipeline_orchestrator = "airflow"
+        mocked.ingest_scheduler_enabled = True
         assert scheduler_should_run() is False
 
 

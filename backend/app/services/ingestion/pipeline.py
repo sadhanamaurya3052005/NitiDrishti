@@ -17,8 +17,12 @@ from app.repositories.ingestion import (
     SourceRepository,
 )
 from app.services.ingestion.base import retrieve
+from app.services.ingestion.contracts import assert_ast, assert_bronze, assert_silver
+from app.services.ingestion.dq_score import compute_dq
 from app.services.ingestion.extractors import extract_listing_urls, extract_schemes
 from app.services.ingestion.factory import connector_for
+from app.services.ingestion.failures import classify_app_error, classify_exception
+from app.services.ingestion.health import apply_ingest_outcome
 from app.services.ingestion.http import RetrieveFn
 from app.services.ingestion.layers import PIPELINE_STAGES
 from app.services.ingestion.payload import IngestResult, SourceSpec
@@ -78,6 +82,7 @@ class SchemeIngestionService:
             connector_type=spec.connector_type,
             department_id=department_id,
         )
+        started = time.perf_counter()
         if not source.is_active:
             detail = json.dumps(
                 {
@@ -86,12 +91,24 @@ class SchemeIngestionService:
                     "note": "Source is_active=false; ingestion refused",
                 }
             )
+            failure = classify_app_error("SOURCE_INACTIVE", detail, stage="source_registry")
             log_row = self.logs.start(source.id)
+            duration_ms = int((time.perf_counter() - started) * 1000)
             self.logs.finish(
                 log_row,
                 status="failed",
                 error_code="SOURCE_INACTIVE",
                 detail=detail,
+                failure_class=failure.failure_class,
+                retryable=failure.retryable,
+                failure_stage=failure.failure_stage,
+                duration_ms=duration_ms,
+            )
+            apply_ingest_outcome(
+                source,
+                success=False,
+                error_code="SOURCE_INACTIVE",
+                duration_ms=duration_ms,
             )
             return IngestResult(
                 source_url=spec.url,
@@ -103,6 +120,7 @@ class SchemeIngestionService:
         try:
             payload = connector_for(spec.connector_type, self.retrieve_fn).fetch(spec.url)
             storage_path = persist_snapshot(str(source.id), payload)
+            assert_bronze(payload, storage_path=storage_path)
             existing = self.documents.get_by_hash(source.id, payload.content_hash)
             if existing is None:
                 document = self.documents.add_document(
@@ -122,12 +140,13 @@ class SchemeIngestionService:
                     and prior.status == "ok"
                     and prior.content_hash == payload.content_hash
                 ):
-                    self.sources.mark_checked(source)
+                    duration_ms = int((time.perf_counter() - started) * 1000)
                     detail = json.dumps(
                         {
                             "layer": "bronze",
                             "stage": "dedup_skip",
                             "document": "existing",
+                            "change_class": "NO_CHANGE",
                             "stages": list(PIPELINE_STAGES[:3]),
                         }
                     )
@@ -138,6 +157,14 @@ class SchemeIngestionService:
                         rows_upserted=0,
                         content_hash=payload.content_hash,
                         detail=detail,
+                        duration_ms=duration_ms,
+                    )
+                    apply_ingest_outcome(
+                        source,
+                        success=True,
+                        http_status=payload.status_code,
+                        content_hash=payload.content_hash,
+                        duration_ms=duration_ms,
                     )
                     return IngestResult(
                         source_url=spec.url,
@@ -160,21 +187,40 @@ class SchemeIngestionService:
             rows = 0
             versions = 0
             kinds: list[str] = []
+            change_classes: list[str] = []
             for scheme in extract_schemes(parsed, spec):
                 apply_quality(scheme, retrieved_at=payload.retrieved_at)
+                assert_silver(scheme)
+                for rule in scheme.rules:
+                    assert_ast(rule.ast_json)
                 validate_scheme(scheme)
-                _scheme, created, change_kind = self.writer.apply(scheme, document)
+                dq = compute_dq(scheme, retrieved_at=payload.retrieved_at)
+                governance = {
+                    **dq.as_dict(),
+                    # Extraction confidence is NOT eligibility confidence.
+                    "extraction_confidence": float(scheme.confidence or 0.0),
+                    "rule_validation_status": dq.rule_validation_status,
+                }
+                if dq.blocking:
+                    scheme.status = "needs_review"
+                _scheme, created, change_kind = self.writer.apply(
+                    scheme,
+                    document,
+                    governance=governance,
+                )
                 rows += 1
                 versions += created
                 kinds.append(change_kind)
+                change_classes.append((governance or {}).get("change_class") or "UNKNOWN_CHANGE")
 
-            self.sources.mark_checked(source)
+            duration_ms = int((time.perf_counter() - started) * 1000)
             unchanged = existing is not None and versions == 0
             detail = json.dumps(
                 {
                     "layer": "gold" if versions else "silver",
                     "versions_created": versions,
                     "changes": kinds,
+                    "change_classes": change_classes,
                     "children": len(child_urls),
                     "document": "existing" if existing is not None else "new",
                     "stages": list(PIPELINE_STAGES),
@@ -187,6 +233,14 @@ class SchemeIngestionService:
                 rows_upserted=rows,
                 content_hash=payload.content_hash,
                 detail=detail,
+                duration_ms=duration_ms,
+            )
+            apply_ingest_outcome(
+                source,
+                success=True,
+                http_status=payload.status_code,
+                content_hash=payload.content_hash,
+                duration_ms=duration_ms,
             )
             return IngestResult(
                 source_url=spec.url,
@@ -200,13 +254,30 @@ class SchemeIngestionService:
                 child_urls=child_urls,
             )
         except AppError as exc:
+            duration_ms = int((time.perf_counter() - started) * 1000)
+            failure = classify_app_error(exc.code, exc.message)
             self.logs.finish(
                 log_row,
                 status="failed",
                 error_code=exc.code,
                 detail=exc.message,
+                failure_class=failure.failure_class,
+                retryable=failure.retryable,
+                failure_stage=failure.failure_stage,
+                duration_ms=duration_ms,
             )
-            log.warning("ingestion_failed", url=spec.url, error_code=exc.code)
+            apply_ingest_outcome(
+                source,
+                success=False,
+                error_code=exc.code,
+                duration_ms=duration_ms,
+            )
+            log.warning(
+                "ingestion_failed",
+                url=spec.url,
+                error_code=exc.code,
+                failure_class=failure.failure_class,
+            )
             return IngestResult(
                 source_url=spec.url,
                 status="failed",
@@ -214,13 +285,30 @@ class SchemeIngestionService:
                 detail=exc.message,
             )
         except Exception as exc:
+            duration_ms = int((time.perf_counter() - started) * 1000)
+            failure = classify_exception(exc)
             self.logs.finish(
                 log_row,
                 status="failed",
                 error_code="INTERNAL_ERROR",
                 detail=type(exc).__name__,
+                failure_class=failure.failure_class,
+                retryable=failure.retryable,
+                failure_stage=failure.failure_stage,
+                duration_ms=duration_ms,
             )
-            log.warning("ingestion_failed", url=spec.url, error_type=type(exc).__name__)
+            apply_ingest_outcome(
+                source,
+                success=False,
+                error_code="INTERNAL_ERROR",
+                duration_ms=duration_ms,
+            )
+            log.warning(
+                "ingestion_failed",
+                url=spec.url,
+                error_type=type(exc).__name__,
+                failure_class=failure.failure_class,
+            )
             return IngestResult(
                 source_url=spec.url,
                 status="failed",

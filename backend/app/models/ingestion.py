@@ -34,7 +34,13 @@ class Department(UUIDPrimaryKeyMixin, TimestampMixin, Base):
 
 class Source(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     __tablename__ = "sources"
-    __table_args__ = (CheckConstraint(f"connector_type IN {CONNECTOR_TYPES}", name="connector_type"),)
+    __table_args__ = (
+        CheckConstraint(f"connector_type IN {CONNECTOR_TYPES}", name="connector_type"),
+        CheckConstraint(
+            "health_status IN ('HEALTHY', 'DEGRADED', 'FAILING', 'INACTIVE', 'UNKNOWN')",
+            name="sources_health_status",
+        ),
+    )
 
     name: Mapped[str] = mapped_column(String(200), nullable=False)
     source_url: Mapped[str] = mapped_column(String(1000), unique=True, nullable=False)
@@ -43,6 +49,16 @@ class Source(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     is_active: Mapped[bool] = mapped_column(nullable=False, default=True, server_default="true")
     last_checked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     department_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("departments.id"), nullable=True, index=True)
+    last_success_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    last_failure_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    consecutive_failures: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
+    total_successes: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
+    total_failures: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
+    last_http_status: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    last_error_code: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    last_content_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    last_fetch_duration_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    health_status: Mapped[str] = mapped_column(String(16), nullable=False, default="UNKNOWN", server_default="UNKNOWN")
 
     documents: Mapped[list[SourceDocument]] = relationship(back_populates="source")
     logs: Mapped[list[IngestionLog]] = relationship(back_populates="source")
@@ -76,5 +92,9 @@ class IngestionLog(UUIDPrimaryKeyMixin, Base):
     detail: Mapped[str | None] = mapped_column(Text, nullable=True)
     rows_upserted: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     content_hash: Mapped[str | None] = mapped_column(String(64), nullable=True, index=True)
+    failure_class: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    retryable: Mapped[bool | None] = mapped_column(nullable=True)
+    failure_stage: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    duration_ms: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
     source: Mapped[Source] = relationship(back_populates="logs")

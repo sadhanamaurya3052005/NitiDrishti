@@ -1,4 +1,4 @@
-"""Read-side scheme catalog queries."""
+﻿"""Read-side scheme catalog queries."""
 
 from __future__ import annotations
 
@@ -36,6 +36,7 @@ class SchemeRepository(BaseRepository[Scheme]):
             return None
         stmt = (
             select(Scheme, SchemeVersion, Department)
+            .select_from(Scheme)
             .join(SchemeVersion, Scheme.current_version_id == SchemeVersion.id)
             .outerjoin(Department, Scheme.department_id == Department.id)
             .options(
@@ -64,6 +65,7 @@ class SchemeRepository(BaseRepository[Scheme]):
             return self.catalog_row(scheme)
         stmt = (
             select(Scheme, SchemeVersion, Department)
+            .select_from(Scheme)
             .join(SchemeVersion, SchemeVersion.id == chosen.id)
             .outerjoin(Department, Scheme.department_id == Department.id)
             .options(
@@ -93,6 +95,7 @@ class SchemeRepository(BaseRepository[Scheme]):
     ) -> list[tuple[Scheme, SchemeVersion, Department | None]]:
         stmt = (
             select(Scheme, SchemeVersion, Department)
+            .select_from(Scheme)
             .join(SchemeVersion, Scheme.current_version_id == SchemeVersion.id)
             .outerjoin(Department, Scheme.department_id == Department.id)
             .options(
@@ -176,3 +179,4 @@ def _effective_on(version: SchemeVersion, as_of: date) -> bool:
     if start is not None and as_of < start:
         return False
     return end is None or as_of <= end
+

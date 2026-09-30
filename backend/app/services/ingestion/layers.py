@@ -1,8 +1,9 @@
-"""Named medallion stages. This is the ingest package — not a second data_pipeline tree."""
+"""Named medallion stages. Airflow is the production orchestrator."""
 
 from __future__ import annotations
 
-# Interview / PPT map. Airflow is not in this repo; APScheduler runs the same path.
+from app.config import settings
+
 PIPELINE_STAGES = (
     "source_registry",
     "ingestion",
@@ -19,5 +20,12 @@ PIPELINE_STAGES = (
 )
 
 PRINCIPLE = "AI extracts → evidence verifies → versioning preserves → AST decides"
-ORCHESTRATOR = "apscheduler"
-AIRFLOW_IMPLEMENTED = False
+
+
+def orchestrator_name() -> str:
+    return (settings.pipeline_orchestrator or "airflow").strip().lower()
+
+
+ORCHESTRATOR = "airflow"  # documented default; runtime value from orchestrator_name()
+AIRFLOW_IMPLEMENTED = True
+AIRFLOW_BLOCKER = None

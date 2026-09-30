@@ -7,6 +7,7 @@ from app.core.logging import get_logger
 from app.models.ingestion import Source
 from app.repositories.audit import AuditRepository
 from app.repositories.ingestion import IngestionLogRepository, SourceRepository
+from app.services.ingestion.failures import classify_from_log
 from app.services.ingestion.opportunity_pipeline import OpportunityIngestionService
 from app.services.ingestion.opportunity_registry import OPPORTUNITY_SOURCES
 from app.services.ingestion.payload import SourceSpec
@@ -28,6 +29,11 @@ class SourceControlService:
         items = []
         for row in rows:
             source = self.sources.get(row.source_id)
+            classified = classify_from_log(
+                error_code=row.error_code,
+                detail=row.detail,
+                http_status=row.http_status,
+            )
             items.append(
                 {
                     "log_id": str(row.id),
@@ -38,9 +44,14 @@ class SourceControlService:
                     "error_code": row.error_code,
                     "detail": row.detail,
                     "http_status": row.http_status,
+                    "failure_class": row.failure_class or classified.failure_class,
+                    "retryable": row.retryable if row.retryable is not None else classified.retryable,
+                    "failure_stage": row.failure_stage or classified.failure_stage,
+                    "duration_ms": row.duration_ms,
                     "started_at": row.started_at.isoformat(),
                     "finished_at": None if row.finished_at is None else row.finished_at.isoformat(),
                     "content_hash": row.content_hash,
+                    "source_health": None if source is None else source.health_status,
                 }
             )
         return {"items": items}

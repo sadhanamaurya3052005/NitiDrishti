@@ -18,7 +18,8 @@ citizen exactly what they qualify for — with the reason, the source and the ve
 | Status | Freeze tag **`v1.0-final`** — QA / security / data audit starts here. No major features during the audit. |
 | Frontend | Next.js 15 App Router + TypeScript + Tailwind + Framer Motion |
 | Backend | FastAPI + SQLAlchemy + Alembic — `/health`, `/ready`, `/api/version` |
-| Database | Native PostgreSQL (this machine: 18). No Docker. Schema via Alembic. `pg_trgm` + `unaccent` required. PostGIS and pgvector are **not required** (maps use bundled TopoJSON; embeddings have no VECTOR column). |
+| Database | Native PostgreSQL (this machine: 18). Schema via Alembic. `pg_trgm` + `unaccent` required. PostGIS and pgvector are **not required**. |
+| Pipeline | Airflow DAG `nitidrishti_ingestion_pipeline` (sole orchestrator when `PIPELINE_ORCHESTRATOR=airflow`). MinIO RAW optional. See `docs/data-engineering.md`. |
 
 ---
 
@@ -26,27 +27,26 @@ citizen exactly what they qualify for — with the reason, the source and the ve
 
 ```
 NitiDrishti/
-├── frontend/          Next.js application
-├── backend/           FastAPI + Alembic + pytest
-│   └── app/services/
-│       ├── ingestion/     bronze → silver → gold pipeline (not a data_pipeline/ tree)
-│       └── eligibility/   AST engine (not a rule_engine/ tree)
+├── frontend/          Next.js application (do not redesign for DE work)
+├── backend/           FastAPI + Alembic + pytest + ingestion services
+├── airflow/dags/      Airflow DAG definitions
+├── spark_jobs/        PySpark / Python silver normalization
+├── dbt/               dbt Core models against app PostgreSQL
 ├── database/init/     one-time SQL (extensions only)
-├── docs/              architecture, API, deploy, security
-├── scripts/           native pg_dump backup drill
-├── storage/           raw snapshots + backups (git-ignored)
+├── docs/              architecture, API, deploy, data-engineering
+├── storage/           raw / silver / backups (git-ignored)
+├── docker-compose.yml MinIO + Airflow (+ Airflow metadata DB)
 ├── .env.example
-├── .gitignore
 └── README.md
 ```
 
-There is **no** top-level `data_pipeline/` or `rule_engine/` folder. Those stages live in `backend/app/services/`. `.env` is git-ignored.
+Application business logic stays in `backend/app/services/`. `.env` is git-ignored.
 
 ---
 
 ## Local setup (VS Code terminal)
 
-Open the repo in VS Code (`D:\NitiDrishti`). Use **two terminals** (`` Ctrl+` `` then the `+` button). PostgreSQL Windows service must be **Running**. Docker is not used.
+Open the repo in VS Code (`D:\NitiDrishti`). Use **two terminals** for API + UI. PostgreSQL Windows service must be **Running**. Optional DE stack: `docker compose up -d` (requires Docker Desktop) — see `docs/data-engineering.md`.
 
 ### 0. Prerequisites
 
@@ -134,21 +134,25 @@ button reads the page aloud, and the role selector previews how navigation chang
 Workspace pages state what they will contain and show an honest empty state — they are never
 filled with sample data.
 
-Run backend and frontend as two native processes (`uvicorn` + `next dev`). Docker is not part of this project.
+Run backend and frontend as two native processes (`uvicorn` + `next dev`). Optional: `docker compose up -d` for MinIO + Airflow (not required to develop the UI).
 
-### Scheduled catalog refresh (batch, not live)
+### Scheduled catalog refresh (Airflow sole orchestrator)
 
-The backend process includes scheduled catalogue refresh (`INGEST_INTERVAL_HOURS`, default 24). `INGEST_SCHEDULE_ENABLED=true` is the default outside tests.
+Default: `PIPELINE_ORCHESTRATOR=airflow` — the FastAPI process does **not** start APScheduler.
+Trigger via Airflow UI or: `python -m scripts.pipeline_stages fetch_sources` (from `backend/`).
+
+Legacy local-only escape hatch (never run alongside Airflow):
 
 ```powershell
-# Optional dedicated native process (first pass immediately, then every INGEST_INTERVAL_HOURS)
 cd backend
+$env:PIPELINE_ORCHESTRATOR='apscheduler'
+$env:INGEST_SCHEDULER_ENABLED='true'
 if ($env:CURL_CA_BUNDLE) { Remove-Item Env:CURL_CA_BUNDLE }
 .\.venv\Scripts\Activate.ps1
 python -m scripts.run_scheduler
 ```
 
-Robots.txt is fail-closed and each source waits `INGESTION_CRAWL_DELAY_SECONDS`. If a crawl already ran inside the interval, the next job skips. Tests / `APP_ENV=testing` never start the crawler. Set `INGEST_SCHEDULER_ENABLED=false` (or `INGEST_SCHEDULE_ENABLED=false`) to disable in the API process.
+Robots.txt is fail-closed and each source waits `INGESTION_CRAWL_DELAY_SECONDS`. Tests / `APP_ENV=testing` never start the crawler.
 
 Operator desks: `python -m scripts.bootstrap_operators` seeds one `WELFARE_OFFICER`, one `ADMIN`, and one `CSC_OPERATOR` from `BOOTSTRAP_*` env values. Self-registration stays `CITIZEN`. Sign in at `/login` as **Welfare officer** with `BOOTSTRAP_OFFICER_EMAIL`. CSC camp dispatch (`POST /api/v1/analytics/districts/{id}/csc-camp`) is officer/admin only. Guests write zero rows.
 
@@ -200,7 +204,7 @@ version number, so anything shown to a citizen can be traced back.
 
 ## Backup drill (native PostgreSQL 18)
 
-Docker is not used. `pg_dump` must be on PATH (or under `C:\Program Files\PostgreSQL\18\bin`).
+Docker is optional for the app DB backup path. `pg_dump` must be on PATH (or under `C:\Program Files\PostgreSQL\18\bin`).
 Passwords stay in `POSTGRES_PASSWORD` / `PGPASSWORD` and are never printed.
 
 ```powershell
@@ -221,9 +225,10 @@ Suggested remote layout (not a live portal): Vercel for `frontend/`, a VM runnin
 
 Academic 2026–27 SIH260092 — not a live sarkari portal. Freeze tag `v1.0-final`.
 
-**Known limitations (do not over-claim in viva):** not a ministry apply API; not Airflow;
+**Known limitations (do not over-claim in viva):** not a ministry apply API;
 AI/NLP extraction is not live (`FEATURE_AI_EXTRACTION` default false); PostGIS is not serving
 the map; offline is a catalog snapshot, not a full PWA; disaster DSS is catalog rows only
-and default off; guest writes zero server PII rows.
+and default off; guest writes zero server PII rows. Airflow/MinIO require Docker Desktop
+on this host (Compose + DAG are in-repo; see `docs/data-engineering.md`). CD deploy target is not configured.
 
 Live catalog / pipeline sizes: `GET /api/v1/analytics/summary` and `GET /api/v1/pipeline`.

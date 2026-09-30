@@ -65,12 +65,40 @@ def test_quality_flags_missing_fields_without_filling_them() -> None:
     assert "stale_document" in flags
 
 
+def test_no_rules_blocks_auto_publish_to_gold() -> None:
+    """High-confidence text without eligibility AST must not skip HITL."""
+    from app.services.ingestion.payload import NormalizedScheme
+
+    scheme = NormalizedScheme(
+        slug="step7-no-rules",
+        code=None,
+        name="Official Support Scheme Without Extracted Rules",
+        name_hi="Official Support Scheme Without Extracted Rules",
+        summary="This official page has a long enough summary for identity but no age or income AST yet.",
+        summary_hi="This official page has a long enough summary for identity but no age or income AST yet.",
+        category="other",
+        department_code=None,
+        source_url="https://vikaspedia.in/step7-no-rules",
+        status="published",
+        badge=None,
+        badge_hi=None,
+        benefits=[],
+        rules=[],
+        documents=[],
+        confidence=0.9,
+    )
+    flags = apply_quality(scheme)
+    assert "no_rules" in flags
+    assert scheme.status == "needs_review"
+
+
 def test_pipeline_map_is_public_and_honest() -> None:
     payload = TestClient(app).get("/api/v1/pipeline").json()
     assert payload["success"] is True
     data = payload["data"]
     assert data["airflow"] is AIRFLOW_IMPLEMENTED
-    assert data["airflow"] is False
+    assert data["airflow"] is True
+    assert data["orchestrator"] in {"airflow", "apscheduler"}
     assert data["llm_votes_eligibility"] is False
     assert data["robots_fail_closed"] is True
     assert data["stages"] == list(PIPELINE_STAGES)

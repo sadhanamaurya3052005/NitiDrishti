@@ -1,0 +1,35 @@
+version: 2
+
+models:
+  - name: stg_sources
+    columns:
+      - name: source_id
+        tests: [unique, not_null]
+      - name: source_url
+        tests: [unique, not_null]
+  - name: stg_documents
+    columns:
+      - name: document_id
+        tests: [unique, not_null]
+      - name: content_hash
+        tests: [not_null]
+  - name: stg_schemes
+    columns:
+      - name: scheme_id
+        tests: [unique, not_null]
+      - name: slug
+        tests: [unique, not_null]
+      - name: status
+        tests:
+          - accepted_values:
+              values: ['draft', 'published', 'archived', 'needs_review']
+  - name: mart_published_schemes
+    columns:
+      - name: scheme_id
+        tests: [unique, not_null]
+      - name: content_hash
+        tests: [not_null]
+      - name: provenance_complete
+        tests:
+          - accepted_values:
+              values: [true]

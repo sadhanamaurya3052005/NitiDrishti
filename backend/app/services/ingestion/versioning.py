@@ -1,8 +1,9 @@
-"""Immutable scheme versions. Updates insert a new row and retarget current_version_id."""
+"""Immutable scheme versions. Updates always insert a new version row."""
 
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from typing import Any
 from uuid import UUID
 
 from sqlalchemy import func, select
@@ -10,6 +11,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.models.ingestion import Department, SourceDocument
 from app.models.schemes import Benefit, EligibilityRule, RequiredDocument, Scheme, SchemeVersion
+from app.services.ingestion.change_class import change_requires_hitl, classify_scheme_change
 from app.services.ingestion.dedup import detect_change_kind, scheme_fingerprint, version_fingerprint
 from app.services.ingestion.payload import NormalizedScheme
 
@@ -46,7 +48,13 @@ class SchemeWriteRepository:
         )
         return int(value or 0)
 
-    def apply(self, scheme_data: NormalizedScheme, document: SourceDocument | None) -> tuple[Scheme, int, str]:
+    def apply(
+        self,
+        scheme_data: NormalizedScheme,
+        document: SourceDocument | None,
+        *,
+        governance: dict[str, Any] | None = None,
+    ) -> tuple[Scheme, int, str]:
         """Insert a new version when the fingerprint changes. Returns (scheme, versions_created, change_kind)."""
         department_id = self.get_department_id(scheme_data.department_code)
         scheme = self.get_by_slug(scheme_data.slug)
@@ -63,6 +71,12 @@ class SchemeWriteRepository:
 
         current = self.current_version(scheme)
         incoming_hash = scheme_fingerprint(scheme_data)
+        change_class = classify_scheme_change(current, scheme_data)
+        if change_requires_hitl(change_class) and current is not None:
+            # Material/structural diffs need analyst review before remaining public gold.
+            scheme_data.status = "needs_review"
+        if governance is not None:
+            governance = {**governance, "change_class": change_class}
         if current is not None and version_fingerprint(current) == incoming_hash:
             if scheme_data.status == "published" or scheme.status != "published":
                 scheme.status = scheme_data.status
@@ -73,7 +87,13 @@ class SchemeWriteRepository:
                 scheme.department_id = department_id
             self.session.flush()
             return scheme, 0, "UNCHANGED"
-        if scheme_data.status != "published" and current is not None:
+        if (
+            scheme_data.status != "published"
+            and current is not None
+            and scheme.status == "published"
+            and not change_requires_hitl(change_class)
+        ):
+            # Thin / blocked extract must not replace a published pointer.
             scheme.category = scheme_data.category
             if scheme_data.code:
                 scheme.code = scheme_data.code
@@ -94,6 +114,7 @@ class SchemeWriteRepository:
             source_document_id=None if document is None else document.id,
             retrieved_at=now if document is None else document.retrieved_at,
             last_verified_at=now,
+            governance=governance,
         )
         self.session.add(version)
         self.session.flush()

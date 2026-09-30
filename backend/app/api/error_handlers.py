@@ -1,4 +1,4 @@
-"""Map application errors to the frozen JSON envelope."""
+﻿"""Map application errors to the frozen JSON envelope."""
 
 from __future__ import annotations
 
@@ -38,7 +38,7 @@ def register_error_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(SQLAlchemyError)
     async def db_error_handler(request: Request, exc: SQLAlchemyError) -> JSONResponse:
-        log.error("database_error", error_type=type(exc).__name__)
+        log.error("database_error", error_type=type(exc).__name__, error=str(exc), statement=getattr(exc, "statement", None))
         wrapped = DBError("Database request failed")
         return JSONResponse(
             status_code=wrapped.status_code,
@@ -52,3 +52,4 @@ def register_error_handlers(app: FastAPI) -> None:
             status_code=500,
             content=fail("INTERNAL_ERROR", "An unexpected error occurred", _request_id(request)),
         )
+
