@@ -28,6 +28,7 @@ SCHEME_CATEGORIES = (
     "women",
     "skills",
     "banking",
+    "insurance",
     "health",
     "housing",
     "sports",

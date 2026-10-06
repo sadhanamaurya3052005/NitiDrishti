@@ -26,6 +26,7 @@ export type DbSchemeCategory =
   | 'women'
   | 'skills'
   | 'banking'
+  | 'insurance'
   | 'health'
   | 'housing'
   | 'sports'

@@ -40,3 +40,5 @@ apscheduler>=3.10
 # weasyprint (dossier PDF)
 # pymupdf, pytesseract, pillow  (scanned gazette OCR — optional; fail-closed if missing)
 # sentence-transformers, onnxruntime, pgvector (semantic search)
+
+minio>=7.2

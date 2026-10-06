@@ -16,7 +16,8 @@ CIVIC_SECTORS = tuple(item for item in SCHEME_CATEGORIES if item != "other")
 
 
 def test_scheme_categories_include_eighteen_marquee_ids() -> None:
-    assert len(CIVIC_SECTORS) == 18
+    assert "insurance" in CIVIC_SECTORS
+    assert len(CIVIC_SECTORS) == 19
     assert set(CIVIC_SECTORS) <= set(SCHEME_CATEGORIES)
     assert "other" in SCHEME_CATEGORIES
 
@@ -65,6 +66,35 @@ def test_spec_category_is_preserved_for_housing() -> None:
     schemes = extract_schemes(parsed, spec)
     assert len(schemes) == 1
     assert schemes[0].category == "housing"
+
+
+def test_insurance_keyword_is_not_classified_as_banking() -> None:
+    html = """
+    <html><head><title>Pradhan Mantri Jeevan Jyoti Bima Yojana</title>
+    <meta name="description" content="Life insurance cover for eligible bank account holders as notified by the Department of Financial Services." />
+    </head><body><p>PMJJBY provides life insurance cover. Premium and eligibility are as notified in the official scheme page.</p></body></html>
+    """
+    payload = RawPayload(
+        url="https://en.vikaspedia.in/viewcontent/schemesall/schemes-for-unemployed-and-poor/pradhan-mantri-jeevan-jyoti-bima-yojana",
+        final_url="https://en.vikaspedia.in/viewcontent/schemesall/schemes-for-unemployed-and-poor/pradhan-mantri-jeevan-jyoti-bima-yojana",
+        status_code=200,
+        mime_type="text/html",
+        content=html.encode(),
+        retrieved_at=datetime.now(UTC),
+        content_hash=sha256_text(html),
+    )
+    parsed = ParsedDocument(payload=payload, title="Pradhan Mantri Jeevan Jyoti Bima Yojana", text=html, html=html)
+    spec = SourceSpec(
+        name="PMJJBY",
+        url=payload.url,
+        connector_type="html",
+        category=None,
+        slug="pmjjby",
+        code="PMJJBY",
+    )
+    schemes = extract_schemes(parsed, spec)
+    assert schemes
+    assert schemes[0].category == "insurance"
 
 
 def test_vikaspedia_subdomains_are_official() -> None:

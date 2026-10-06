@@ -169,20 +169,42 @@ def run_spark_silver() -> dict:
 
 
 def run_dbt() -> dict:
-    """Invoke dbt when available; otherwise report skip for environments without dbt."""
+    """Run dbt using the isolated NitiDrishti backend environment."""
     import shutil
     import subprocess
 
     dbt_root = _BACKEND.parent / "dbt"
-    if shutil.which("dbt") is None:
-        return {"status": "skipped", "reason": "dbt CLI not installed in this process"}
+    dbt_bin = shutil.which("dbt") or "/opt/nitidrishti-venv/bin/dbt"
+
     if not dbt_root.exists():
         return {"status": "skipped", "reason": "dbt project missing"}
+
+    if not Path(dbt_bin).exists():
+        return {"status": "skipped", "reason": "dbt CLI not installed in this process"}
+
     common = ["--project-dir", str(dbt_root), "--profiles-dir", str(dbt_root)]
-    parsed = subprocess.run(["dbt", "parse", *common], capture_output=True, text=True, check=False)
+
+    parsed = subprocess.run(
+        [dbt_bin, "parse", *common],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
     if parsed.returncode != 0:
-        return {"status": "failed", "stage": "parse", "stderr": parsed.stderr[-2000:]}
-    ran = subprocess.run(["dbt", "run", *common], capture_output=True, text=True, check=False)
+        return {
+            "status": "failed",
+            "stage": "parse",
+            "stderr": parsed.stderr[-2000:],
+        }
+
+    ran = subprocess.run(
+        [dbt_bin, "run", *common],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
     if ran.returncode != 0:
         return {
             "status": "failed",
@@ -190,7 +212,14 @@ def run_dbt() -> dict:
             "stderr": ran.stderr[-2000:],
             "stdout": ran.stdout[-2000:],
         }
-    tested = subprocess.run(["dbt", "test", *common], capture_output=True, text=True, check=False)
+
+    tested = subprocess.run(
+        [dbt_bin, "test", *common],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+
     return {
         "status": "ok" if tested.returncode == 0 else "failed",
         "parse": "ok",

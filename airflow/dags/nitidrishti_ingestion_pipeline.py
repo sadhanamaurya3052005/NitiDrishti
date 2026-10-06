@@ -1,4 +1,4 @@
-"""Airflow DAG: NitiDrishti official-source ingestion medallion pipeline.
+﻿"""Airflow DAG: NitiDrishti official-source ingestion medallion pipeline.
 
 Business logic lives in backend services; this DAG only orchestrates stages.
 Requires Airflow 2.x. APScheduler must remain disabled while this DAG is active.
@@ -13,8 +13,8 @@ from airflow import DAG
 from airflow.operators.bash import BashOperator
 from airflow.operators.empty import EmptyOperator
 
-BACKEND = Path(__file__).resolve().parents[2] / "backend"
-PYTHON = "python"
+BACKEND = Path("/opt/nitidrishti/backend")
+PYTHON = "/opt/nitidrishti-venv/bin/python"
 STAGE = f"cd {BACKEND} && {PYTHON} -m scripts.pipeline_stages"
 
 default_args = {
@@ -29,7 +29,7 @@ default_args = {
 
 with DAG(
     dag_id="nitidrishti_ingestion_pipeline",
-    description="Official-source → RAW/MinIO → Silver/Spark → dbt Gold → lineage metrics",
+    description="Official-source â†’ RAW/MinIO â†’ Silver/Spark â†’ dbt Gold â†’ lineage metrics",
     default_args=default_args,
     schedule="0 2 * * *",
     start_date=datetime(2026, 1, 1),

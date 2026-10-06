@@ -10,6 +10,7 @@ export interface CivicSector {
     | 'Baby'
     | 'Wrench'
     | 'Landmark'
+    | 'ShieldCheck'
     | 'Activity'
     | 'Home'
     | 'Trophy'
@@ -29,7 +30,7 @@ export interface CivicSector {
   color: string;
 }
 
-/** Eighteen public G2C sectors. Names only — no invented scheme counts. */
+/** Public G2C sectors. Names only — no invented scheme counts. */
 export const CIVIC_SECTORS: readonly CivicSector[] = [
   { id: 'agriculture', icon: 'Tractor', nameEn: 'Agriculture & Rural', nameHi: 'कृषि एवं ग्रामीण', category: 'agriculture', color: '#2E7D32' },
   { id: 'welfare', icon: 'HeartHandshake', nameEn: 'Social Welfare', nameHi: 'सामाजिक कल्याण', category: 'welfare', color: '#EF6C00' },
@@ -38,6 +39,7 @@ export const CIVIC_SECTORS: readonly CivicSector[] = [
   { id: 'women', icon: 'Baby', nameEn: 'Women & Child', nameHi: 'महिला एवं बाल', category: 'women', color: '#C2185B' },
   { id: 'skills', icon: 'Wrench', nameEn: 'Skills & Jobs', nameHi: 'कौशल एवं रोजगार', category: 'skills', color: '#00897B' },
   { id: 'banking', icon: 'Landmark', nameEn: 'Banking & Insurance', nameHi: 'बैंकिंग एवं बीमा', category: 'banking', color: '#1A237E' },
+  { id: 'insurance', icon: 'ShieldCheck', nameEn: 'Insurance', nameHi: 'बीमा', category: 'insurance', color: '#0D47A1' },
   { id: 'health', icon: 'Activity', nameEn: 'Health', nameHi: 'स्वास्थ्य', category: 'health', color: '#C62828' },
   { id: 'housing', icon: 'Home', nameEn: 'Housing', nameHi: 'आवास', category: 'housing', color: '#6D4C41' },
   { id: 'sports', icon: 'Trophy', nameEn: 'Sports & Culture', nameHi: 'खेल एवं संस्कृति', category: 'sports', color: '#F9A825' },

@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import ipaddress
+import socket
+from collections.abc import Callable
 from urllib.parse import urlparse
 
 from app.config import settings
@@ -67,6 +69,53 @@ def is_official_host(host: str) -> bool:
     if any(host == item or host.endswith("." + item) for item in settings.ingestion_allowed_domain_list):
         return True
     return any(host.endswith(suffix) for suffix in OFFICIAL_SUFFIXES)
+
+
+Address = ipaddress.IPv4Address | ipaddress.IPv6Address
+Resolver = Callable[[str], list[Address]]
+
+
+def address_is_blocked(addr: Address) -> bool:
+    """Private, loopback, link-local, reserved, multicast, and unspecified addresses."""
+    return bool(
+        addr.is_private
+        or addr.is_loopback
+        or addr.is_link_local
+        or addr.is_reserved
+        or addr.is_multicast
+        or addr.is_unspecified
+    )
+
+
+def _resolve_host(host: str) -> list[Address]:
+    infos = socket.getaddrinfo(host, None)
+    found: list[Address] = []
+    for info in infos:
+        sockaddr = info[4]
+        if not sockaddr:
+            continue
+        raw = str(sockaddr[0]).split("%", 1)[0]
+        try:
+            found.append(ipaddress.ip_address(raw))
+        except ValueError:
+            continue
+    return found
+
+
+def select_pinned_ip(host: str, *, resolver: Resolver | None = None) -> str:
+    """Resolve once and return one public address. Any blocked answer fails closed."""
+    lookup = resolver or _resolve_host
+    try:
+        addresses = list(lookup(host))
+    except ValidationError:
+        raise
+    except OSError as exc:
+        raise ValidationError(f"Could not resolve official host: {host}") from exc
+    if not addresses:
+        raise ValidationError(f"Could not resolve official host: {host}")
+    if any(address_is_blocked(addr) for addr in addresses):
+        raise ValidationError(f"Official host resolved to a blocked address: {host}")
+    return str(addresses[0])
 
 
 def assert_whitelisted(url: str) -> str:

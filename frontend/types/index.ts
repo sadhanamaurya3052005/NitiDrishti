@@ -27,6 +27,7 @@ export type SchemeCategory =
   | 'women'
   | 'skills'
   | 'banking'
+  | 'insurance'
   | 'health'
   | 'housing'
   | 'sports'

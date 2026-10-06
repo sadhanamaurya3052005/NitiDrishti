@@ -162,6 +162,14 @@ FIRST_CRAWL_SOURCES: tuple[SourceSpec, ...] = (
         code="APY",
     ),
     _scheme(
+        name="Pradhan Mantri Jeevan Jyoti Bima Yojana",
+        url="https://en.vikaspedia.in/viewcontent/schemesall/schemes-for-unemployed-and-poor/pradhan-mantri-jeevan-jyoti-bima-yojana",
+        category="insurance",
+        department_code="DFS",
+        slug="pmjjby",
+        code="PMJJBY",
+    ),
+    _scheme(
         name="Ayushman Bharat",
         url="https://en.vikaspedia.in/viewcontent/schemesall/schemes-for-unemployed-and-poor/ayushman-bharat",
         category="health",

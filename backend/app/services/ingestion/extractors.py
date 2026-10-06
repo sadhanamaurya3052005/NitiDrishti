@@ -1,4 +1,4 @@
-"""Deterministic extraction from fetched official artefacts. No LLM."""
+﻿"""Deterministic extraction from fetched official artefacts. No LLM."""
 
 from __future__ import annotations
 
@@ -44,6 +44,7 @@ CATEGORY_FROM_PATH = (
     (("women", "matru", "maternity", "nrlm", "beti"), "women"),
     (("vishwakarma", "handloom", "handicraft", "sfurti", "artisan"), "artisans"),
     (("kaushal", "pmkvy", "skill-development"), "skills"),
+    (("jeevan-jyoti", "pmjjby", "suraksha-bima", "pmsby", "bima-yojana"), "insurance"),
     (("jan-dhan", "pmjdy", "financial-inclusion", "jan_dhan"), "banking"),
     (("scholar", "education", "matric", "student", "nsp-"), "education"),
     (("pmegp", "mudra", "msme", "udyam", "enterprise"), "msme"),
@@ -62,25 +63,26 @@ CATEGORY_FROM_PATH = (
 LISTING_HINTS = ("/schemesall/", "/schemes-for-", "/viewcontent/", "/schemes/")
 
 CATEGORY_BADGE = {
-    "agriculture": ("Central · Agriculture & Rural", "केंद्रीय · कृषि एवं ग्रामीण"),
-    "welfare": ("Central · Social Welfare", "केंद्रीय · सामाजिक कल्याण"),
-    "education": ("Central · Education", "केंद्रीय · शिक्षा"),
-    "msme": ("Central · MSME", "केंद्रीय · एमएसएमई"),
-    "women": ("Central · Women & Child", "केंद्रीय · महिला एवं बाल"),
-    "skills": ("Central · Skills & Jobs", "केंद्रीय · कौशल एवं रोजगार"),
-    "banking": ("Central · Banking & Insurance", "केंद्रीय · बैंकिंग एवं बीमा"),
-    "health": ("Central · Health", "केंद्रीय · स्वास्थ्य"),
-    "housing": ("Central · Housing", "केंद्रीय · आवास"),
-    "sports": ("Central · Sports & Culture", "केंद्रीय · खेल एवं संस्कृति"),
-    "science": ("Central · Science & IT", "केंद्रीय · विज्ञान एवं आईटी"),
-    "transport": ("Central · Transport", "केंद्रीय · परिवहन"),
-    "tourism": ("Central · Travel & Tourism", "केंद्रीय · यात्रा एवं पर्यटन"),
-    "jal": ("Central · Water & Sanitation", "केंद्रीय · जल एवं स्वच्छता"),
-    "legal": ("Central · Legal Aid", "केंद्रीय · विधिक सहायता"),
-    "artisans": ("Central · Artisans", "केंद्रीय · कारीगर"),
-    "disaster": ("Central · Disaster Relief", "केंद्रीय · आपदा राहत"),
-    "gig": ("Central · Gig & Labour", "केंद्रीय · गिग एवं श्रम"),
-    "other": ("Central", "केंद्रीय"),
+    "agriculture": ("Central Â· Agriculture & Rural", "à¤•à¥‡à¤‚à¤¦à¥à¤°à¥€à¤¯ Â· à¤•à¥ƒà¤·à¤¿ à¤à¤µà¤‚ à¤—à¥à¤°à¤¾à¤®à¥€à¤£"),
+    "welfare": ("Central Â· Social Welfare", "à¤•à¥‡à¤‚à¤¦à¥à¤°à¥€à¤¯ Â· à¤¸à¤¾à¤®à¤¾à¤œà¤¿à¤• à¤•à¤²à¥à¤¯à¤¾à¤£"),
+    "education": ("Central Â· Education", "à¤•à¥‡à¤‚à¤¦à¥à¤°à¥€à¤¯ Â· à¤¶à¤¿à¤•à¥à¤·à¤¾"),
+    "msme": ("Central Â· MSME", "à¤•à¥‡à¤‚à¤¦à¥à¤°à¥€à¤¯ Â· à¤à¤®à¤à¤¸à¤à¤®à¤ˆ"),
+    "women": ("Central Â· Women & Child", "à¤•à¥‡à¤‚à¤¦à¥à¤°à¥€à¤¯ Â· à¤®à¤¹à¤¿à¤²à¤¾ à¤à¤µà¤‚ à¤¬à¤¾à¤²"),
+    "skills": ("Central Â· Skills & Jobs", "à¤•à¥‡à¤‚à¤¦à¥à¤°à¥€à¤¯ Â· à¤•à¥Œà¤¶à¤² à¤à¤µà¤‚ à¤°à¥‹à¤œà¤—à¤¾à¤°"),
+    "banking": ("Central Â· Banking & Insurance", "à¤•à¥‡à¤‚à¤¦à¥à¤°à¥€à¤¯ Â· à¤¬à¥ˆà¤‚à¤•à¤¿à¤‚à¤— à¤à¤µà¤‚ à¤¬à¥€à¤®à¤¾"),
+    "insurance": ("Central Â· Insurance", "à¤•à¥‡à¤‚à¤¦à¥à¤°à¥€à¤¯ Â· à¤¬à¥€à¤®à¤¾"),
+    "health": ("Central Â· Health", "à¤•à¥‡à¤‚à¤¦à¥à¤°à¥€à¤¯ Â· à¤¸à¥à¤µà¤¾à¤¸à¥à¤¥à¥à¤¯"),
+    "housing": ("Central Â· Housing", "à¤•à¥‡à¤‚à¤¦à¥à¤°à¥€à¤¯ Â· à¤†à¤µà¤¾à¤¸"),
+    "sports": ("Central Â· Sports & Culture", "à¤•à¥‡à¤‚à¤¦à¥à¤°à¥€à¤¯ Â· à¤–à¥‡à¤² à¤à¤µà¤‚ à¤¸à¤‚à¤¸à¥à¤•à¥ƒà¤¤à¤¿"),
+    "science": ("Central Â· Science & IT", "à¤•à¥‡à¤‚à¤¦à¥à¤°à¥€à¤¯ Â· à¤µà¤¿à¤œà¥à¤žà¤¾à¤¨ à¤à¤µà¤‚ à¤†à¤ˆà¤Ÿà¥€"),
+    "transport": ("Central Â· Transport", "à¤•à¥‡à¤‚à¤¦à¥à¤°à¥€à¤¯ Â· à¤ªà¤°à¤¿à¤µà¤¹à¤¨"),
+    "tourism": ("Central Â· Travel & Tourism", "à¤•à¥‡à¤‚à¤¦à¥à¤°à¥€à¤¯ Â· à¤¯à¤¾à¤¤à¥à¤°à¤¾ à¤à¤µà¤‚ à¤ªà¤°à¥à¤¯à¤Ÿà¤¨"),
+    "jal": ("Central Â· Water & Sanitation", "à¤•à¥‡à¤‚à¤¦à¥à¤°à¥€à¤¯ Â· à¤œà¤² à¤à¤µà¤‚ à¤¸à¥à¤µà¤šà¥à¤›à¤¤à¤¾"),
+    "legal": ("Central Â· Legal Aid", "à¤•à¥‡à¤‚à¤¦à¥à¤°à¥€à¤¯ Â· à¤µà¤¿à¤§à¤¿à¤• à¤¸à¤¹à¤¾à¤¯à¤¤à¤¾"),
+    "artisans": ("Central Â· Artisans", "à¤•à¥‡à¤‚à¤¦à¥à¤°à¥€à¤¯ Â· à¤•à¤¾à¤°à¥€à¤—à¤°"),
+    "disaster": ("Central Â· Disaster Relief", "à¤•à¥‡à¤‚à¤¦à¥à¤°à¥€à¤¯ Â· à¤†à¤ªà¤¦à¤¾ à¤°à¤¾à¤¹à¤¤"),
+    "gig": ("Central Â· Gig & Labour", "à¤•à¥‡à¤‚à¤¦à¥à¤°à¥€à¤¯ Â· à¤—à¤¿à¤— à¤à¤µà¤‚ à¤¶à¥à¤°à¤®"),
+    "other": ("Central", "à¤•à¥‡à¤‚à¤¦à¥à¤°à¥€à¤¯"),
 }
 
 
@@ -154,11 +156,11 @@ def _from_document(parsed: ParsedDocument, spec: SourceSpec) -> NormalizedScheme
     if not title or len(title) < 8:
         return None
 
-    name_hi = page_bits.get("title_hi") or title
+    name_hi = page_bits.get("title_hi") or ""
     summary = (summary or "").strip()
     if len(summary) < 40:
         summary = _first_paragraph(body) or summary
-    summary_hi = page_bits.get("description_hi") or summary
+    summary_hi = page_bits.get("description_hi") or ""
 
     category = _category_for(spec, parsed.payload.final_url, f"{title} {summary} {body}")
     badge, badge_hi = _badges(spec, category)
@@ -189,7 +191,7 @@ def _from_document(parsed: ParsedDocument, spec: SourceSpec) -> NormalizedScheme
         benefits = [
             NormalizedBenefit(
                 label="As notified in the official source",
-                label_hi="आधिकारिक स्रोत में अधिसूचित अनुसार",
+                label_hi="à¤†à¤§à¤¿à¤•à¤¾à¤°à¤¿à¤• à¤¸à¥à¤°à¥‹à¤¤ à¤®à¥‡à¤‚ à¤…à¤§à¤¿à¤¸à¥‚à¤šà¤¿à¤¤ à¤…à¤¨à¥à¤¸à¤¾à¤°",
                 amount_text="As notified in the official source",
             )
         ]
@@ -227,8 +229,8 @@ def _from_row(row: dict[str, Any], parsed: ParsedDocument, spec: SourceSpec) -> 
     category = _as_str(lowered.get("category")) or spec.category or "other"
     if category not in SCHEME_CATEGORIES:
         category = spec.category or "other"
-    name_hi = _as_str(lowered.get("name_hi") or lowered.get("namehi")) or name
-    summary_hi = _as_str(lowered.get("summary_hi") or lowered.get("summaryhi")) or summary
+    name_hi = _as_str(lowered.get("name_hi") or lowered.get("namehi")) or ""
+    summary_hi = _as_str(lowered.get("summary_hi") or lowered.get("summaryhi")) or ""
     badge, badge_hi = _badges(spec, category)
     return NormalizedScheme(
         slug=slug,
@@ -391,7 +393,7 @@ def _badges(spec: SourceSpec, category: str) -> tuple[str, str]:
 def _benefits_from_text(text: str) -> list[NormalizedBenefit]:
     benefits: list[NormalizedBenefit] = []
     for rupees in iter_rupee_amounts(text)[:3]:
-        label = f"₹{rupees:,}"
+        label = f"â‚¹{rupees:,}"
         benefits.append(
             NormalizedBenefit(label=label, label_hi=label, amount_text=label, amount_paise=rupees * 100)
         )
@@ -421,8 +423,8 @@ def _rules_from_text(text: str) -> list[NormalizedRule]:
                 NormalizedRule(
                     rule_key="income",
                     kind="income",
-                    label=f"Income ≤ ₹{rupees:,}",
-                    detail=f"Official page caps annual family income at ₹{rupees:,}.",
+                    label=f"Income â‰¤ â‚¹{rupees:,}",
+                    detail=f"Official page caps annual family income at â‚¹{rupees:,}.",
                     ast_json={"op": "lte", "field": "income", "value": rupees},
                     income_limit=rupees,
                     sort_order=1,
@@ -463,3 +465,4 @@ def _documents_from_text(text: str) -> list[NormalizedDocumentNeed]:
             seen.add(needle)
             docs.append(NormalizedDocumentNeed(code=slugify(needle)[:64], label=label))
     return docs
+

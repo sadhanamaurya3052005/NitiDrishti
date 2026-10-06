@@ -9,7 +9,7 @@ from __future__ import annotations
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import AliasChoices, Field, computed_field
+from pydantic import AliasChoices, Field, computed_field, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 Environment = Literal["development", "testing", "staging", "production"]
@@ -138,6 +138,44 @@ class Settings(BaseSettings):
     bootstrap_admin_password: str = ""
     bootstrap_csc_email: str = ""
     bootstrap_csc_password: str = ""
+
+    @model_validator(mode="after")
+    def refuse_known_defaults_outside_development(self) -> Settings:
+        """Local Compose placeholders must not boot staging or production."""
+        if self.app_env in {"development", "testing"}:
+            return self
+        local_defaults = {
+            "",
+            "minioadmin",
+            "admin",
+            "airflow",
+            "change_me",
+            "changeme",
+            "change_me_locally",
+            "password",
+            "postgres",
+        }
+        blocked: list[str] = []
+        if self.minio_endpoint.strip() and self.minio_secret_key.strip().lower() in local_defaults:
+            blocked.append("MINIO_SECRET_KEY")
+        if self.minio_endpoint.strip() and self.minio_access_key.strip().lower() in {"", "minioadmin"}:
+            blocked.append("MINIO_ACCESS_KEY")
+        if self.jwt_secret_key.strip().lower() in {
+            "",
+            "generate_a_long_random_string",
+            "generate_a_long_random_string_32b",
+            "change_me",
+            "changeme",
+        }:
+            blocked.append("JWT_SECRET_KEY")
+        if self.postgres_password.strip().lower() in local_defaults:
+            blocked.append("POSTGRES_PASSWORD")
+        if blocked:
+            names = ", ".join(blocked)
+            raise ValueError(
+                f"Known local default credentials are refused when APP_ENV is {self.app_env}: {names}"
+            )
+        return self
 
     @computed_field  # type: ignore[prop-decorator]
     @property

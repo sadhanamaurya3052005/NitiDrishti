@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import time
-from urllib.parse import urljoin
+from urllib.parse import parse_qsl, urlencode, urljoin, urlparse, urlunparse
 
 from sqlalchemy.orm import Session
 
@@ -25,7 +25,7 @@ from app.services.ingestion.failures import classify_app_error, classify_excepti
 from app.services.ingestion.health import apply_ingest_outcome
 from app.services.ingestion.http import RetrieveFn
 from app.services.ingestion.layers import PIPELINE_STAGES
-from app.services.ingestion.payload import IngestResult, SourceSpec
+from app.services.ingestion.payload import IngestResult, ParsedDocument, SourceSpec
 from app.services.ingestion.quality import apply_quality
 from app.services.ingestion.registry import FIRST_CRAWL_MAX_DISCOVERED, FIRST_CRAWL_SOURCES
 from app.services.ingestion.snapshot import persist_snapshot
@@ -34,6 +34,137 @@ from app.services.ingestion.versioning import SchemeWriteRepository
 from app.services.ingestion.whitelist import assert_whitelisted, hostname_of
 
 log = get_logger("nitidrishti.ingestion")
+
+
+def _vikaspedia_hindi_candidates(parsed: ParsedDocument, source_url: str) -> list[str]:
+    """Find official Vikaspedia Hindi representations without inventing translations."""
+    candidates: list[str] = []
+    seen: set[str] = set()
+
+    def add(url: str) -> None:
+        if not url or url in seen:
+            return
+        parsed_url = urlparse(url)
+        host = (parsed_url.hostname or "").lower()
+        if host not in {"schemes.vikaspedia.in", "vikaspedia.in"}:
+            return
+
+        query = dict(parse_qsl(parsed_url.query, keep_blank_values=True))
+        if query.get("lgn", "").lower() != "hi":
+            return
+
+        seen.add(url)
+        candidates.append(url)
+
+    for link in parsed.links:
+        add(urljoin(source_url, link))
+
+    source = urlparse(source_url)
+    if (source.hostname or "").lower().endswith("vikaspedia.in"):
+        query = dict(parse_qsl(source.query, keep_blank_values=True))
+        query["lgn"] = "hi"
+        hindi_url = urlunparse(
+            (
+                source.scheme or "https",
+                "schemes.vikaspedia.in",
+                source.path,
+                source.params,
+                urlencode(query),
+                source.fragment,
+            )
+        )
+        add(hindi_url)
+
+    return candidates
+
+
+def _extract_hindi_fields(parsed: ParsedDocument) -> tuple[str, str]:
+    """Extract Hindi fields only from fetched Hindi official content."""
+    try:
+        from app.services.ingestion.extractors import (
+            _clean_title,
+            _first_paragraph,
+            _meta_description,
+            _next_data_fields,
+        )
+
+        page_bits = _next_data_fields(parsed.next_data)
+        title = _clean_title(parsed.title) or _clean_title(page_bits.get("title"))
+        summary = (
+            _meta_description(parsed.html)
+            or page_bits.get("description")
+            or _first_paragraph(parsed.text)
+        )
+
+        title = (title or "").strip()
+        summary = (summary or "").strip()
+
+        devanagari = sum(
+            1 for ch in f"{title} {summary}" if "\u0900" <= ch <= "\u097F"
+        )
+
+        if devanagari < 3:
+            return "", ""
+
+        return title[:300], summary[:2000]
+    except Exception:
+        return "", ""
+
+
+def _enrich_hindi_scheme(
+    scheme,
+    parsed: ParsedDocument,
+    spec: SourceSpec,
+    retrieve_fn: RetrieveFn,
+) -> None:
+    """Best-effort official Hindi enrichment."""
+    source_url = parsed.payload.final_url or spec.url
+
+    if "vikaspedia.in" not in (urlparse(source_url).hostname or "").lower():
+        return
+
+    try:
+        for hindi_url in _vikaspedia_hindi_candidates(parsed, source_url):
+            try:
+                hindi_payload = retrieve_fn(hindi_url)
+                hindi_parsed = connector_for("html", retrieve_fn).parse(hindi_payload)
+                hindi_name, hindi_summary = _extract_hindi_fields(hindi_parsed)
+
+                if hindi_name:
+                    scheme.name_hi = hindi_name
+                if hindi_summary:
+                    scheme.summary_hi = hindi_summary
+
+                if hindi_name or hindi_summary:
+                    log.info(
+                        "Hindi enrichment succeeded",
+                        extra={
+                            "source_url": source_url,
+                            "hindi_url": hindi_url,
+                            "scheme": scheme.slug,
+                        },
+                    )
+                    return
+
+            except Exception as exc:
+                log.warning(
+                    "Hindi enrichment candidate failed",
+                    extra={
+                        "source_url": source_url,
+                        "hindi_url": hindi_url,
+                        "error": type(exc).__name__,
+                    },
+                )
+
+    except Exception as exc:
+        log.warning(
+            "Hindi enrichment skipped",
+            extra={
+                "source_url": source_url,
+                "scheme": getattr(scheme, "slug", ""),
+                "error": type(exc).__name__,
+            },
+        )
 
 
 class SchemeIngestionService:
@@ -189,6 +320,12 @@ class SchemeIngestionService:
             kinds: list[str] = []
             change_classes: list[str] = []
             for scheme in extract_schemes(parsed, spec):
+                _enrich_hindi_scheme(
+                    scheme,
+                    parsed,
+                    spec,
+                    self.retrieve_fn,
+                )
                 apply_quality(scheme, retrieved_at=payload.retrieved_at)
                 assert_silver(scheme)
                 for rule in scheme.rules:

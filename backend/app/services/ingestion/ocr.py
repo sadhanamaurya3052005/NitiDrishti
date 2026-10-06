@@ -97,9 +97,9 @@ def ocr_scanned_document(content: bytes, *, mime_type: str | None, filename: str
     if not status["available"]:
         return OcrResult(
             available=False,
-            engine=None,
+            engine=str(status.get("status") or "not_configured"),
             text="",
-            confidence=None,
+            confidence=0.0,
             pages=0,
             reason=str(status["reason"]),
         )

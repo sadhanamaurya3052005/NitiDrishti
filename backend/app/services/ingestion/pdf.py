@@ -36,16 +36,21 @@ class PdfConnector(SourceConnector):
             title = first_line
         ocr_confidence = None
         ocr_engine = None
-        if settings.feature_ai_extraction and text_is_thin(text):
-            ocr = ocr_scanned_document(payload.content, mime_type=payload.mime_type)
-            ocr_engine = ocr.engine
-            if ocr.available and ocr.text.strip():
-                text = ocr.text.strip()
-                ocr_confidence = ocr.confidence
-                if not title:
-                    title = next((line.strip() for line in text.splitlines() if line.strip()), None)
-            elif ocr.reason:
-                ocr_engine = ocr.engine or "unavailable"
+        if text_is_thin(text):
+            if not settings.feature_ai_extraction:
+                ocr_engine = "not_configured"
+                ocr_confidence = 0.0
+            else:
+                ocr = ocr_scanned_document(payload.content, mime_type=payload.mime_type)
+                ocr_engine = ocr.engine or "not_configured"
+                ocr_confidence = 0.0 if ocr.confidence is None else ocr.confidence
+                if ocr.available and ocr.text.strip():
+                    text = ocr.text.strip()
+                    if not title:
+                        title = next((line.strip() for line in text.splitlines() if line.strip()), None)
+                else:
+                    ocr_engine = ocr.engine or "not_configured"
+                    ocr_confidence = 0.0
         return ParsedDocument(
             payload=payload,
             title=title,

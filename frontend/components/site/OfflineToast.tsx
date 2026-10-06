@@ -11,8 +11,8 @@ export function OfflineToast() {
   const snapshot =
     workerReady && catalogCacheEnabled
       ? locale === 'hi'
-        ? 'नेटवर्क नहीं। पिछली सफल कैटलॉग प्राप्ति ऑफ़लाइन पढ़ी जा सकती है। पात्रता के लिए API चाहिए।'
-        : 'Network disconnected. A catalog snapshot from the last successful fetch may be readable. Eligibility still needs the API.'
+        ? 'नेटवर्क नहीं। कैटलॉग स्नैपशॉट पढ़ा जा सकता है। बंडल कैटलॉग नियम इस डिवाइस पर चल सकते हैं। सर्वर पात्रता और आवेदन के लिए API चाहिए। कियोस्क कतार IndexedDB में रहती है।'
+        : 'Network disconnected. A catalog snapshot may be readable. Bundled catalog rules can run on this device. Server eligibility and applications still need the API. The kiosk queue stays in IndexedDB.'
       : locale === 'hi'
         ? 'नेटवर्क नहीं। कैटलॉग स्नैपशॉट उपलब्ध नहीं — IndexedDB में केवल कियोस्क कतार हो सकती है।'
         : 'Network disconnected. No catalog snapshot on this device — IndexedDB may hold a kiosk queue.';
