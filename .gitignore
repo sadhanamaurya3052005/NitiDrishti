@@ -69,3 +69,6 @@ desktop.ini
 # Logs
 logs/
 *.log
+
+.pytest_tmp/
+api_test.json
